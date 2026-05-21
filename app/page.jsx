@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { useProfile } from './_components/useProfile';
 import { getProfile } from '../lib/profiles';
 import { todayMantra, MANTRAS } from '../lib/mantras';
+import EquityCurve from './_components/EquityCurve';
+import Insights from './_components/Insights';
+import CountUp from './_components/CountUp';
+import { SkeletonCard } from './_components/Skeleton';
 
 export default function Desk() {
   const profile = useProfile();
@@ -24,7 +28,7 @@ export default function Desk() {
     return () => { cancelled = true; };
   }, [profile]);
 
-  if (loading || !db) return <div className="muted">Loading…</div>;
+  if (loading || !db) return <DashboardSkeleton />;
 
   const trades = db.trades.filter(t => t.user === profile);
   const closed = trades.filter(t => t.status === 'closed');
@@ -33,18 +37,15 @@ export default function Desk() {
   const losses = closed.filter(t => Number(t.pnl) < 0).length;
   const totalPnl = closed.reduce((s, t) => s + (Number(t.pnl) || 0), 0);
   const avgR = closed.length
-    ? (closed.reduce((s, t) => s + (Number(t.rMultiple) || 0), 0) / closed.length).toFixed(2)
-    : '—';
-  const winRate = closed.length ? Math.round((wins / closed.length) * 100) + '%' : '—';
+    ? +(closed.reduce((s, t) => s + (Number(t.rMultiple) || 0), 0) / closed.length).toFixed(2)
+    : 0;
+  const winRate = closed.length ? Math.round((wins / closed.length) * 100) : 0;
 
   const today = new Date().toISOString().slice(0, 10);
   const noTradeToday = db.noTradeDays.some(d => d.user === profile && d.date === today);
   const headToday = db.headspace.find(d => d.user === profile && d.date === today);
   const prepToday = db.prep.find(p => p.user === profile && p.date === today);
   const postToday = (db.post || []).find(p => p.user === profile && p.date === today);
-
-  const lastClosed = [...closed].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')).slice(-14);
-  const maxAbs = Math.max(1, ...lastClosed.map(t => Math.abs(Number(t.pnl) || 0)));
 
   const me = getProfile(profile);
 
@@ -80,31 +81,25 @@ export default function Desk() {
           prep={!!prepToday}
           head={!!headToday}
           flat={noTradeToday}
-          tradedToday={trades.some(t => (t.createdAt || '').slice(0,10) === today)}
+          tradedToday={trades.some(t => (t.createdAt || '').slice(0, 10) === today)}
           posted={!!postToday}
         />
       </div>
 
-      <div className="row" style={{ marginBottom: 24 }}>
-        <Stat label="Total trades" value={trades.length} tone="neutral" />
-        <Stat label="Open" value={open.length} tone="amber" />
-        <Stat label="Win rate" value={winRate} tone="neutral" />
-        <Stat label="Avg R" value={avgR} tone="amber" />
-        <Stat label="W / L" value={`${wins} / ${losses}`} tone="neutral" />
-        <Stat
-          label="Total PnL"
-          value={fmtUsd(totalPnl)}
-          tone={totalPnl >= 0 ? 'green' : 'red'}
-          spark={
-            <div className="spark">
-              {lastClosed.map((t, i) => {
-                const v = Number(t.pnl) || 0;
-                const h = Math.max(2, (Math.abs(v) / maxAbs) * 28);
-                return <div key={i} className={'bar ' + (v < 0 ? 'neg' : '')} style={{ height: h }} />;
-              })}
-            </div>
-          }
-        />
+      {/* Stats row */}
+      <div className="row" style={{ marginBottom: 22 }}>
+        <Stat label="Trades"   value={trades.length} />
+        <Stat label="Open"     value={open.length} tone="amber" />
+        <Stat label="Win rate" value={winRate} format={v => Math.round(v) + '%'} />
+        <Stat label="Avg R"    value={avgR} format={v => v.toFixed(2)} tone="amber" />
+        <Stat label="W / L"    value={`${wins} / ${losses}`} raw />
+        <Stat label="Total PnL" value={totalPnl} tone={totalPnl >= 0 ? 'green' : 'red'} format={v => (v >= 0 ? '+' : '') + Math.round(v).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} />
+      </div>
+
+      {/* Equity curve + insights */}
+      <div className="grid-2-1" style={{ marginBottom: 22 }}>
+        <EquityCurve trades={trades} />
+        <Insights trades={trades} />
       </div>
 
       <h2>Recent trades</h2>
@@ -169,7 +164,7 @@ function PrepSummary({ prep }) {
       </div>
       {prep.bias && <div style={{ marginTop: 10 }}><span className="label-mini">bias </span>{prep.bias}</div>}
       <div className="grid-2" style={{ marginTop: 12 }}>
-        <MiniBlock label="Longs"  color="var(--pos)" text={prep.longs}  />
+        <MiniBlock label="Longs"  color="var(--pos)" text={prep.longs} />
         <MiniBlock label="Shorts" color="var(--neg)" text={prep.shorts} />
       </div>
     </div>
@@ -212,12 +207,43 @@ function DayChecklist({ prep, head, flat, tradedToday, posted }) {
   );
 }
 
-function Stat({ label, value, tone = 'amber', spark }) {
+function Stat({ label, value, tone = 'neutral', format, raw, spark }) {
   return (
     <div className="card stat-card">
       <div className="label">{label}</div>
-      <div className={'value ' + tone}>{value}</div>
+      <div className={'value ' + tone}>
+        {raw ? value : (typeof value === 'number' ? <CountUp value={value} format={format || (v => Math.round(v).toString())} /> : value)}
+      </div>
       {spark}
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div>
+      <div className="flex between" style={{ marginBottom: 22 }}>
+        <div className="skeleton" style={{ height: 28, width: 220 }} />
+        <div className="flex">
+          <div className="skeleton" style={{ height: 40, width: 110 }} />
+          <div className="skeleton" style={{ height: 40, width: 110 }} />
+        </div>
+      </div>
+      <div className="card" style={{ marginBottom: 22, borderLeft: '3px solid var(--amber)' }}>
+        <div className="skeleton" style={{ height: 12, width: 120, marginBottom: 12 }} />
+        <div className="skeleton" style={{ height: 20, width: '60%' }} />
+      </div>
+      <div className="grid-2-1" style={{ marginBottom: 22 }}>
+        <SkeletonCard height={160} />
+        <SkeletonCard height={160} />
+      </div>
+      <div className="row" style={{ marginBottom: 22 }}>
+        {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} height={90} />)}
+      </div>
+      <div className="grid-2-1">
+        <SkeletonCard height={220} />
+        <SkeletonCard height={220} />
+      </div>
     </div>
   );
 }
