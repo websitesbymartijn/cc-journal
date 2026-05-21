@@ -1,14 +1,13 @@
-import { readDB } from '../../../lib/db';
+import { readDB, detectBackend } from '../../../lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const hasToken = !!process.env.GITHUB_TOKEN;
-  const repo     = process.env.GITHUB_REPO || 'websitesbymartijn/cc-journal';
-  const branch   = process.env.GITHUB_BRANCH || 'main';
+  const backend = detectBackend();
   const onVercel = !!process.env.VERCEL;
 
   let canRead = false;
+  let canWrite = false;
   let error = null;
   let counts = null;
 
@@ -16,30 +15,33 @@ export async function GET() {
     const db = await readDB();
     canRead = true;
     counts = {
-      trades:      Array.isArray(db.trades) ? db.trades.length : 0,
-      prep:        Array.isArray(db.prep) ? db.prep.length : 0,
-      post:        Array.isArray(db.post) ? db.post.length : 0,
-      headspace:   Array.isArray(db.headspace) ? db.headspace.length : 0,
-      reviews:     Array.isArray(db.reviews) ? db.reviews.length : 0,
-      noTradeDays: Array.isArray(db.noTradeDays) ? db.noTradeDays.length : 0,
+      trades:      db.trades?.length || 0,
+      prep:        db.prep?.length || 0,
+      post:        db.post?.length || 0,
+      headspace:   db.headspace?.length || 0,
+      reviews:     db.reviews?.length || 0,
+      noTradeDays: db.noTradeDays?.length || 0,
     };
   } catch (e) {
     error = String(e.message || e);
   }
 
-  // On Vercel without a token, writes will fail (read-only filesystem)
-  const writesPersist = hasToken;
-  const mode = hasToken ? 'github' : (onVercel ? 'broken' : 'local');
+  // Writes will persist if a remote backend is configured, OR on local dev (writeable FS)
+  canWrite = backend === 'kv' || backend === 'github' || !onVercel;
 
   return Response.json({
-    mode,           // 'github' | 'local' | 'broken'
-    hasToken,
+    backend,           // 'kv' | 'github' | 'local'
     onVercel,
-    repo,
-    branch,
     canRead,
-    writesPersist,
+    canWrite,
     counts,
     error,
+    env: {
+      hasKvUrl:   !!(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL),
+      hasKvToken: !!(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN),
+      hasGhToken: !!process.env.GITHUB_TOKEN,
+      repo:       process.env.GITHUB_REPO || null,
+      branch:     process.env.GITHUB_BRANCH || null,
+    },
   });
 }

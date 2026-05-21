@@ -9,14 +9,14 @@ export default function StorageBanner() {
     fetch('/api/status', { cache: 'no-store' })
       .then(r => r.json())
       .then(setStatus)
-      .catch(() => setStatus({ mode: 'broken', error: 'status check failed' }));
+      .catch(() => setStatus({ backend: 'local', canWrite: false }));
   }, []);
 
   if (!status || dismissed) return null;
-  if (status.mode === 'github') return null;        // all good
-  if (status.mode === 'local') return null;          // local dev, fine
+  if (status.canWrite && status.backend !== 'local') return null;
+  if (status.backend === 'local' && !status.onVercel) return null; // dev mode fine
 
-  // broken — Vercel without token
+  // Vercel + no persistent backend
   return (
     <div style={{
       background: 'rgba(232, 121, 99, 0.10)',
@@ -31,8 +31,7 @@ export default function StorageBanner() {
     }}>
       <strong style={{ color: 'var(--neg)' }}>Storage not configured</strong>
       <span style={{ color: 'var(--fg-dim)' }}>
-        Saves to prep, trades, headspace and post are <strong>not being persisted</strong>.
-        Set GITHUB_TOKEN in your Vercel project to fix this.
+        Saves are <strong>not being persisted</strong>. Add Vercel KV to fix it (2 minutes).
       </span>
       <a href="/setup" style={{ marginLeft: 'auto' }}>How to fix →</a>
       <button className="ghost sm" onClick={() => setDismissed(true)}>dismiss</button>
