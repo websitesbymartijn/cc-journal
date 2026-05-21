@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProfile } from './_components/useProfile';
+import { localToday } from '../lib/dates';
 import { getProfile } from '../lib/profiles';
 import { todayMantra, MANTRAS } from '../lib/mantras';
 import EquityCurve from './_components/EquityCurve';
@@ -41,7 +42,7 @@ export default function Desk() {
     : 0;
   const winRate = closed.length ? Math.round((wins / closed.length) * 100) : 0;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const noTradeToday = db.noTradeDays.some(d => d.user === profile && d.date === today);
   const headToday = db.headspace.find(d => d.user === profile && d.date === today);
   const prepToday = db.prep.find(p => p.user === profile && p.date === today);

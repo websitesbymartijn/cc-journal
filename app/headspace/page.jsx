@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
+import { localToday } from '../../lib/dates';
 
 export default function Headspace() {
   const profile = useProfile();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState({ date: today, sleep: 3, food: 3, mind: 3, note: '' });
   const [busy, setBusy] = useState(false);

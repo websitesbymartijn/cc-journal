@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
+import { localToday } from '../../lib/dates';
 
 const DOPEN_TAGS = [
   'inside pdVA', 'outside pdVA (high)', 'outside pdVA (low)',
@@ -14,7 +15,7 @@ const DOPEN_TAGS = [
 
 export default function PrepPage() {
   const profile = useProfile();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const [date, setDate] = useState(today);
   const [allPrep, setAllPrep] = useState([]);
   const [allHs, setAllHs] = useState([]);

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
+import { localToday } from '../../lib/dates';
 
 const CONFLUENCES = [
   'pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC',
@@ -18,7 +19,7 @@ export default function NewTrade() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [prepBlocker, setPrepBlocker] = useState(null); // null | { reason, hsReady }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
 
   const [form, setForm] = useState({
     instrument: 'ES',

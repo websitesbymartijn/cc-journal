@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
+import { localToday } from '../../lib/dates';
 
 const MOODS = [
   { v: 'flowing',   label: 'Flowing' },
@@ -16,7 +17,7 @@ const MOODS = [
 
 export default function PostPage() {
   const profile = useProfile();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const [date, setDate] = useState(today);
   const [allPosts, setAllPosts] = useState([]);
   const [busy, setBusy] = useState(false);

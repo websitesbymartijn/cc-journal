@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
+import { localToday, localWeekStart } from '../../lib/dates';
 
 export default function ReviewPage() {
   const profile = useProfile();
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState({
-    weekStart: isoWeekStart(new Date()),
+    weekStart: localWeekStart(new Date()),
     followedProcess: '',
     aPlusActuallyAPlus: '',
     nextWeekPlay: '',
@@ -87,9 +88,4 @@ function KV({ k, v }) {
     </div>
   );
 }
-function isoWeekStart(d) {
-  const date = new Date(d);
-  const day = (date.getUTCDay() + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - day);
-  return date.toISOString().slice(0, 10);
-}
+

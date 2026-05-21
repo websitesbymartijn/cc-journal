@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
+import { localToday } from '../../lib/dates';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -64,7 +65,7 @@ export default function CalendarPage() {
   const monthGreen = monthCells.filter(c => c && (byDate[ymd(cursor.y, cursor.m, c)]?.pnl || 0) > 0).length;
   const monthRed = monthCells.filter(c => c && (byDate[ymd(cursor.y, cursor.m, c)]?.pnl || 0) < 0).length;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = localToday();
 
   function nav(delta) {
     let y = cursor.y, m = cursor.m + delta;
