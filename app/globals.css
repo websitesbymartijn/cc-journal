@@ -676,7 +676,7 @@ input, select, textarea {
   .gate { padding: 14px 16px; }
 
   /* Tables — wrap with scroll */
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+  .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table-scroll table { min-width: 640px; }
   table th, table td { padding: 10px 10px; font-size: 12.5px; }
 
@@ -754,3 +754,33 @@ input, select, textarea {
 /* Prevent horizontal page scroll */
 html, body { overflow-x: hidden; max-width: 100%; }
 .topbar { position: sticky; }
+
+/* ============= Mobile overflow safety ============= */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Most flex containers need their children to be able to shrink past content size */
+.flex > *, .grid-2 > *, .grid-3 > *, .grid-2-1 > *, .row > * {
+  min-width: 0;
+}
+
+/* Wrap long content inside content blocks */
+.card, .prep-block, .post-block, .notice, .gate, td, th {
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+
+/* All media should never overflow */
+img, video, svg, canvas { max-width: 100%; }
+
+/* Skeletons must shrink */
+.skeleton { max-width: 100%; }
+
+/* Tabbed pills/chips must wrap */
+.chips, .nav, .flex.wrap { max-width: 100%; }
+
+/* Tables get scrolled inside .table-scroll */
+.table-scroll { width: 100%; max-width: 100%; }

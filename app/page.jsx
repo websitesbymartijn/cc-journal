@@ -222,16 +222,16 @@ function Stat({ label, value, tone = 'neutral', format, raw, spark }) {
 function DashboardSkeleton() {
   return (
     <div>
-      <div className="flex between" style={{ marginBottom: 22 }}>
-        <div className="skeleton" style={{ height: 28, width: 220 }} />
-        <div className="flex">
-          <div className="skeleton" style={{ height: 40, width: 110 }} />
-          <div className="skeleton" style={{ height: 40, width: 110 }} />
+      <div className="flex between" style={{ marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
+        <div className="skeleton" style={{ height: 28, width: '60%', maxWidth: 220, minWidth: 120 }} />
+        <div className="flex" style={{ flexWrap: 'wrap' }}>
+          <div className="skeleton" style={{ height: 40, width: 90 }} />
+          <div className="skeleton" style={{ height: 40, width: 90 }} />
         </div>
       </div>
       <div className="card" style={{ marginBottom: 22, borderLeft: '3px solid var(--amber)' }}>
-        <div className="skeleton" style={{ height: 12, width: 120, marginBottom: 12 }} />
-        <div className="skeleton" style={{ height: 20, width: '60%' }} />
+        <div className="skeleton" style={{ height: 12, width: 100, marginBottom: 12 }} />
+        <div className="skeleton" style={{ height: 20, width: '80%', maxWidth: 400 }} />
       </div>
       <div className="grid-2-1" style={{ marginBottom: 22 }}>
         <SkeletonCard height={160} />

@@ -144,7 +144,7 @@ export default function CalendarPage() {
 
 function Stat({ label, value, tone = 'green' }) {
   return (
-    <div className="card stat-card" style={{ minWidth: 140 }}>
+    <div className="card stat-card">
       <div className="label">{label}</div>
       <div className={'value ' + tone}>{value}</div>
     </div>

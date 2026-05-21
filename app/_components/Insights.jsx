@@ -40,7 +40,7 @@ function Sparkline({ values }) {
   if (!values || values.length === 0) return <span className="muted">—</span>;
   const max = Math.max(1, ...values.map(v => Math.abs(v)));
   return (
-    <div className="spark" style={{ width: 120, marginTop: 0 }}>
+    <div className="spark" style={{ width: '100%', maxWidth: 120, marginTop: 0 }}>
       {values.map((v, i) => {
         const h = Math.max(3, (Math.abs(v) / max) * 22);
         return <div key={i} className={'bar ' + (v < 0 ? 'neg' : '')} style={{ height: h }} />;
