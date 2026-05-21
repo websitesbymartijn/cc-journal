@@ -18,11 +18,15 @@ const LINKS = [
 export default function Nav() {
   const pathname = usePathname();
   const [profile, setProfile] = useState('martijn');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const p = typeof window !== 'undefined' ? localStorage.getItem('cc-profile') : null;
     if (p) setProfile(p);
   }, []);
+
+  // Close menu on route change
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   function pick(id) {
     setProfile(id);
@@ -35,7 +39,8 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="brand"><span className="slash">//</span>JRNL<span className="blink">_</span></div>
-      <nav className="nav">
+
+      <nav className="nav nav-desktop">
         {LINKS.map(l => {
           const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href);
           return (
@@ -45,8 +50,9 @@ export default function Nav() {
           );
         })}
       </nav>
+
       <div className="profile-switch">
-        <span className="label-mini">desk</span>
+        <span className="label-mini hide-sm">desk</span>
         {PROFILES.map(p => (
           <span
             key={p.id}
@@ -57,7 +63,27 @@ export default function Nav() {
             {p.name}
           </span>
         ))}
+        <button
+          className="ghost menu-btn"
+          aria-label="Menu"
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </div>
+
+      {menuOpen && (
+        <div className="nav-mobile" onClick={() => setMenuOpen(false)}>
+          {LINKS.map(l => {
+            const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href);
+            return (
+              <Link key={l.href} href={l.href} className={active ? 'active' : ''}>
+                {l.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

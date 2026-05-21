@@ -598,3 +598,159 @@ input, select, textarea {
 
 /* Number transitions */
 .stat-card .value, .mono.animated { transition: color 0.3s; }
+
+/* ============= Mobile ============= */
+.menu-btn { display: none; height: 36px; padding: 0 10px; font-size: 16px; }
+.hide-sm { display: inline; }
+.nav-mobile { display: none; }
+
+/* Tablet ish */
+@media (max-width: 980px) {
+  .container { padding: 22px 18px; }
+  h1 { font-size: 24px; }
+  .card.spacious { padding: 22px 20px; }
+  .stat-card .value { font-size: 26px; }
+  .row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+}
+
+/* Phone */
+@media (max-width: 720px) {
+  /* Topbar collapses into brand + profile + hamburger */
+  .topbar { padding: 12px 16px; gap: 10px; flex-wrap: nowrap; }
+  .nav-desktop { display: none; }
+  .menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+  .hide-sm { display: none; }
+  .brand { font-size: 13px; }
+  .profile-switch { gap: 6px; }
+  .profile-switch .pill { padding: 4px 9px; font-size: 11px; }
+
+  /* Mobile drop-down nav */
+  .nav-mobile {
+    display: flex; flex-direction: column;
+    position: absolute; top: 100%; right: 0; left: 0;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 12px 12px;
+    gap: 2px;
+    animation: fadeUp 0.18s ease-out;
+    z-index: 60;
+  }
+  .nav-mobile a {
+    color: var(--fg-dim);
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-mobile a:last-child { border-bottom: none; }
+  .nav-mobile a.active { color: var(--amber); background: var(--accent-bg); }
+
+  /* Mantra bar tighter */
+  .mantra-bar { padding: 8px 16px; font-size: 12px; gap: 10px; }
+  .mantra-bar .quote { font-size: 12px; }
+
+  /* Container + cards */
+  .container { padding: 18px 14px; max-width: 100%; }
+  .card { padding: 16px; border-radius: var(--r-md); }
+  .card.spacious { padding: 18px 16px; }
+  .card.tight { padding: 12px 14px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-card .value { font-size: 22px; }
+
+  /* Typography */
+  h1 { font-size: 22px; }
+  h1 .sub { font-size: 13px; display: block; margin-left: 0; margin-top: 2px; }
+  h2 { font-size: 15px; }
+  h3 { font-size: 10.5px; }
+
+  /* Row of stat cards = 2 per line min */
+  .row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* Forms */
+  textarea.lg { min-height: 160px; font-size: 14px; padding: 14px; }
+  textarea.xl { min-height: 200px; font-size: 14px; padding: 14px; }
+  input.lg { height: 44px; font-size: 14px; }
+  label { font-size: 11.5px; }
+  .gate ul { grid-template-columns: 1fr; }
+  .gate { padding: 14px 16px; }
+
+  /* Tables — wrap with scroll */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+  .table-scroll table { min-width: 640px; }
+  table th, table td { padding: 10px 10px; font-size: 12.5px; }
+
+  /* Calendar — tight cells */
+  .cal-head { gap: 8px; }
+  .cal-month { font-size: 18px; }
+  .cal-head .flex .card.stat-card { padding: 10px 12px; min-width: auto; }
+  .cal-head .flex .card.stat-card .value { font-size: 16px; }
+  .cal-head .flex .card.stat-card .label { font-size: 9.5px; }
+  .cal-grid { gap: 3px; }
+  .cal-cell { min-height: 64px; padding: 6px 5px; border-radius: var(--r-sm); }
+  .cal-cell .d-num   { font-size: 11.5px; }
+  .cal-cell .d-pnl   { font-size: 11px; margin-top: 2px; }
+  .cal-cell .d-count { font-size: 9px; }
+  .cal-cell .markers { gap: 2px; margin-top: 2px; }
+  .cal-cell .markers .dot { width: 4px; height: 4px; }
+  .cal-dow { font-size: 9px; padding: 5px 0; letter-spacing: 0.06em; }
+
+  /* Calendar header buttons + stats wrap */
+  .cal-head .flex { flex-wrap: wrap; gap: 6px; }
+  .cal-head .flex .card { flex: 1 1 calc(33.333% - 4px); }
+
+  /* Prep view blocks */
+  .prep-block { padding: 16px 18px; }
+  .prep-block .line { font-size: 14px; }
+  .prep-block .bias-text { font-size: 15px; }
+  .post-block { padding: 20px 18px; }
+  .post-block .body { font-size: 14px; line-height: 1.65; }
+
+  /* Section header */
+  .section-header { margin: 20px 0 10px; }
+  .section-header .num { font-size: 10.5px; padding: 2px 7px; }
+  .section-header .title { font-size: 13.5px; }
+  .section-header .hint { display: none; }
+
+  /* Chips wrap fully */
+  .chips { gap: 6px; }
+  .chip { padding: 6px 11px; font-size: 12px; }
+  .chip.lg { padding: 8px 13px; font-size: 12.5px; }
+
+  /* Rating pills slightly tighter */
+  .rating-pills .p { width: 36px; height: 36px; font-size: 13px; }
+
+  /* Notice */
+  .notice { padding: 10px 14px; font-size: 12.5px; }
+
+  /* Button hovers don't apply on touch; ensure tap state still gives feedback */
+  button { font-size: 13px; height: 42px; }
+  button.lg { height: 46px; font-size: 14px; padding: 11px 18px; }
+  button.sm { height: 32px; }
+
+  /* Footer */
+  .footer { padding: 16px 14px; }
+
+  /* Empty state */
+  .empty { padding: 36px 16px; }
+  .empty .big { font-size: 18px; }
+
+  /* Mantra-of-day card body */
+  .card[style*="--amber"] > .flex > div:first-child > div { font-size: 15px !important; }
+}
+
+/* Tiny phones */
+@media (max-width: 380px) {
+  .container { padding: 14px 10px; }
+  .topbar { padding: 10px 12px; }
+  .row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card .value { font-size: 20px; }
+  .cal-cell { min-height: 56px; }
+  .cal-cell .d-pnl { font-size: 10px; }
+  .profile-switch .pill { padding: 3px 7px; font-size: 10.5px; }
+}
+
+/* Prevent horizontal page scroll */
+html, body { overflow-x: hidden; max-width: 100%; }
+.topbar { position: sticky; }

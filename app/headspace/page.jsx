@@ -58,7 +58,7 @@ export default function Headspace() {
           <div className="small">Sleep well, trade well.</div>
         </div>
       ) : (
-        <table>
+        <div className="table-scroll"><table>
           <thead><tr><th>Date</th><th>Sleep</th><th>Food</th><th>Mind</th><th>Note</th></tr></thead>
           <tbody>
             {rows.map(r => (
@@ -71,7 +71,7 @@ export default function Headspace() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );

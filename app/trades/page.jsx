@@ -75,7 +75,7 @@ function TradesList() {
       )}
 
       {filtered.length > 0 && (
-        <table>
+        <div className="table-scroll"><table>
           <thead>
             <tr>
               <th>When</th><th>Sym</th><th>Side</th><th>Level</th><th>Conf</th>
@@ -98,7 +98,7 @@ function TradesList() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );

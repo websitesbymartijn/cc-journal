@@ -7,6 +7,13 @@ export const metadata = {
   description: 'Daily prep, trade log, headspace, calendar.',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0f0e0d',
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

@@ -114,7 +114,7 @@ export default function Desk() {
           </div>
         </div>
       ) : (
-        <table>
+        <div className="table-scroll"><table>
           <thead>
             <tr>
               <th>When</th><th>Sym</th><th>Side</th><th>Level</th><th>Conf</th><th>Status</th><th>R</th><th className="right">PnL</th><th></th>
@@ -135,7 +135,7 @@ export default function Desk() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );
