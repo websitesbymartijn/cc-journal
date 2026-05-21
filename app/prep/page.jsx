@@ -111,7 +111,7 @@ export default function PrepPage() {
   const blocked = status.tier === 'block' && !override;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div className="flex between" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
         <h1>Daily prep <span className="sub">— set the plan before the open</span></h1>
         <div className="flex">

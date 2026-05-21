@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProfile } from './_components/useProfile';
-import { PROFILES, getProfile } from '../lib/profiles';
+import { getProfile } from '../lib/profiles';
 import { todayMantra, MANTRAS } from '../lib/mantras';
 
 export default function Desk() {
@@ -12,9 +12,7 @@ export default function Desk() {
   const [loading, setLoading] = useState(true);
   const [mantraOfDay, setMantraOfDay] = useState('');
 
-  useEffect(() => {
-    setMantraOfDay(todayMantra());
-  }, []);
+  useEffect(() => { setMantraOfDay(todayMantra()); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,8 +41,8 @@ export default function Desk() {
   const noTradeToday = db.noTradeDays.some(d => d.user === profile && d.date === today);
   const headToday = db.headspace.find(d => d.user === profile && d.date === today);
   const prepToday = db.prep.find(p => p.user === profile && p.date === today);
+  const postToday = (db.post || []).find(p => p.user === profile && p.date === today);
 
-  // Last 14 closed trades for spark
   const lastClosed = [...closed].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')).slice(-14);
   const maxAbs = Math.max(1, ...lastClosed.map(t => Math.abs(Number(t.pnl) || 0)));
 
@@ -52,47 +50,46 @@ export default function Desk() {
 
   return (
     <div>
-      <div className="flex between" style={{ marginBottom: 18 }}>
-        <h1>
-          The Desk <span className="sub">— {me.name.toLowerCase()}</span>
-        </h1>
+      <div className="flex between" style={{ marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
+        <h1>The desk <span className="sub">— {me.name.toLowerCase()}</span></h1>
         <div className="flex">
-          <Link href="/prep"><button className="amber">Today's Prep</button></Link>
-          <Link href="/new"><button>+ New Trade</button></Link>
-          <NoTradeButton user={profile} alreadyMarked={noTradeToday} onDone={() => refresh(setDb)} />
+          <Link href="/prep"><button>Today's prep</button></Link>
+          <Link href="/new"><button className="outline">+ New trade</button></Link>
+          <Link href="/post"><button className="ghost">Day post</button></Link>
         </div>
       </div>
 
-      {/* Mantra of the day card */}
-      <div className="card" style={{ marginBottom: 18, borderLeft: '3px solid var(--amber)' }}>
-        <div className="flex between">
+      {/* Mantra of the day */}
+      <div className="card" style={{ marginBottom: 22, borderLeft: '3px solid var(--amber)' }}>
+        <div className="flex between" style={{ flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h3 style={{ margin: 0 }}>Mantra of the day</h3>
-            <div style={{ marginTop: 6, fontSize: 16, fontStyle: 'italic', color: 'var(--fg)' }}>
-              <span style={{ color: 'var(--green)' }}>“</span>{mantraOfDay}<span style={{ color: 'var(--green)' }}>”</span>
+            <div style={{ marginTop: 8, fontSize: 17, fontStyle: 'italic', color: 'var(--fg)' }}>
+              <span style={{ color: 'var(--amber)' }}>“</span>{mantraOfDay}<span style={{ color: 'var(--amber)' }}>”</span>
             </div>
           </div>
-          <div className="muted" style={{ fontSize: 11, textAlign: 'right' }}>
+          <div className="muted mono" style={{ fontSize: 11, textAlign: 'right' }}>
             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
           </div>
         </div>
       </div>
 
-      <div className="grid-2-1" style={{ marginBottom: 18 }}>
+      <div className="grid-2-1" style={{ marginBottom: 22 }}>
         <PrepSummary prep={prepToday} />
         <DayChecklist
           prep={!!prepToday}
           head={!!headToday}
           flat={noTradeToday}
           tradedToday={trades.some(t => (t.createdAt || '').slice(0,10) === today)}
+          posted={!!postToday}
         />
       </div>
 
-      <div className="row" style={{ marginBottom: 22 }}>
+      <div className="row" style={{ marginBottom: 24 }}>
         <Stat label="Total trades" value={trades.length} tone="neutral" />
         <Stat label="Open" value={open.length} tone="amber" />
-        <Stat label="Win rate" value={winRate} />
-        <Stat label="Avg R" value={avgR} tone="blue" />
+        <Stat label="Win rate" value={winRate} tone="neutral" />
+        <Stat label="Avg R" value={avgR} tone="amber" />
         <Stat label="W / L" value={`${wins} / ${losses}`} tone="neutral" />
         <Stat
           label="Total PnL"
@@ -102,7 +99,7 @@ export default function Desk() {
             <div className="spark">
               {lastClosed.map((t, i) => {
                 const v = Number(t.pnl) || 0;
-                const h = Math.max(2, (Math.abs(v) / maxAbs) * 24);
+                const h = Math.max(2, (Math.abs(v) / maxAbs) * 28);
                 return <div key={i} className={'bar ' + (v < 0 ? 'neg' : '')} style={{ height: h }} />;
               })}
             </div>
@@ -110,15 +107,15 @@ export default function Desk() {
         />
       </div>
 
-      <h2>Recent Trades</h2>
+      <h2>Recent trades</h2>
       {trades.length === 0 ? (
         <div className="empty">
           <div className="big">No trades yet</div>
           <div>The best trade is often the one not taken. When the setup is real — execute.</div>
           <div className="small">{MANTRAS[2]}</div>
           <div style={{ marginTop: 18 }}>
-            <Link href="/prep"><button className="amber">Start with a prep</button></Link>
-            <Link href="/new" style={{ marginLeft: 8 }}><button>Log a trade</button></Link>
+            <Link href="/prep"><button>Start with a prep</button></Link>
+            <Link href="/new" style={{ marginLeft: 8 }}><button className="outline">Log a trade</button></Link>
           </div>
         </div>
       ) : (
@@ -152,9 +149,9 @@ export default function Desk() {
 function PrepSummary({ prep }) {
   if (!prep) {
     return (
-      <div className="card" style={{ borderLeft: '3px solid var(--blue)' }}>
+      <div className="card" style={{ borderLeft: '3px solid var(--info)' }}>
         <h3>Today's prep</h3>
-        <div className="muted" style={{ marginTop: 8 }}>No prep set for today. The plan is the trade.</div>
+        <div className="muted" style={{ marginTop: 8 }}>No prep yet for today. The plan is the trade.</div>
         <div style={{ marginTop: 10 }}>
           <Link href="/prep"><button>Write today's prep</button></Link>
         </div>
@@ -162,47 +159,51 @@ function PrepSummary({ prep }) {
     );
   }
   return (
-    <div className="card" style={{ borderLeft: '3px solid var(--blue)' }}>
+    <div className="card" style={{ borderLeft: '3px solid var(--info)' }}>
       <div className="flex between">
         <h3>Today's prep</h3>
         <Link href="/prep" className="muted" style={{ fontSize: 11 }}>view full →</Link>
       </div>
-      <div className="flex wrap gap-6" style={{ marginTop: 6 }}>
-        {prep.dOpenTags?.slice(0, 4).map(t => <span key={t} className="tag blue">{t}</span>)}
+      <div className="flex wrap gap-6" style={{ marginTop: 8 }}>
+        {prep.dOpenTags?.slice(0, 4).map(t => <span key={t} className="tag amber">{t}</span>)}
       </div>
-      {prep.bias && <div style={{ marginTop: 8 }}><span className="muted" style={{ fontSize: 10, textTransform: 'uppercase' }}>bias: </span>{prep.bias}</div>}
-      <div className="grid-2" style={{ marginTop: 10 }}>
-        <MiniBlock label="Longs"  tone="green" text={prep.longs}  />
-        <MiniBlock label="Shorts" tone="red"   text={prep.shorts} />
+      {prep.bias && <div style={{ marginTop: 10 }}><span className="label-mini">bias </span>{prep.bias}</div>}
+      <div className="grid-2" style={{ marginTop: 12 }}>
+        <MiniBlock label="Longs"  color="var(--pos)" text={prep.longs}  />
+        <MiniBlock label="Shorts" color="var(--neg)" text={prep.shorts} />
       </div>
     </div>
   );
 }
 
-function MiniBlock({ label, tone, text }) {
+function MiniBlock({ label, color, text }) {
   if (!text) return <div className="muted" style={{ fontSize: 12 }}>{label}: —</div>;
   const lines = text.split('\n').filter(Boolean).slice(0, 3);
   return (
     <div>
-      <div className={'muted'} style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: `var(--${tone})` }}>{label}</div>
-      {lines.map((l, i) => <div key={i} style={{ fontSize: 12, marginTop: 2 }}>{l}</div>)}
+      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color }}>{label}</div>
+      {lines.map((l, i) => <div key={i} style={{ fontSize: 12.5, marginTop: 3, color: 'var(--fg)' }}>{l.replace(/^[•\-\*]\s?/, '')}</div>)}
     </div>
   );
 }
 
-function DayChecklist({ prep, head, flat, tradedToday }) {
+function DayChecklist({ prep, head, flat, tradedToday, posted }) {
   const items = [
-    { label: 'Daily prep', done: prep, href: '/prep' },
-    { label: 'Headspace logged', done: head, href: '/headspace' },
+    { label: 'Daily prep',       done: prep, href: '/prep' },
+    { label: 'Headspace logged', done: head, href: '/prep' },
     { label: tradedToday ? 'Trades logged' : (flat ? 'No-trade day' : 'Trade or flat?'), done: tradedToday || flat, href: tradedToday ? '/trades' : '/' },
+    { label: 'Day post',         done: posted, href: '/post' },
   ];
   return (
-    <div className="card" style={{ borderLeft: '3px solid var(--green)' }}>
-      <h3>Today's Process</h3>
+    <div className="card" style={{ borderLeft: '3px solid var(--amber)' }}>
+      <h3>Today's process</h3>
       <div className="flex col" style={{ gap: 8, marginTop: 8 }}>
         {items.map(it => (
-          <Link key={it.label} href={it.href} className="flex between" style={{ padding: '6px 0', borderBottom: '1px dashed var(--border)', color: 'var(--fg)' }}>
-            <span>{it.done ? '✓ ' : '○ '} {it.label}</span>
+          <Link key={it.label} href={it.href} className="flex between" style={{ padding: '7px 0', borderBottom: '1px dashed var(--border)', color: 'var(--fg)' }}>
+            <span>
+              <span style={{ color: it.done ? 'var(--amber)' : 'var(--muted)', marginRight: 8 }}>{it.done ? '●' : '○'}</span>
+              {it.label}
+            </span>
             <span className="muted" style={{ fontSize: 11 }}>{it.done ? 'done' : 'open'}</span>
           </Link>
         ))}
@@ -211,7 +212,7 @@ function DayChecklist({ prep, head, flat, tradedToday }) {
   );
 }
 
-function Stat({ label, value, tone = 'green', spark }) {
+function Stat({ label, value, tone = 'amber', spark }) {
   return (
     <div className="card stat-card">
       <div className="label">{label}</div>
@@ -219,34 +220,6 @@ function Stat({ label, value, tone = 'green', spark }) {
       {spark}
     </div>
   );
-}
-
-function NoTradeButton({ user, alreadyMarked, onDone }) {
-  const [busy, setBusy] = useState(false);
-  if (alreadyMarked) return <button className="ghost" disabled>flat ✓</button>;
-  return (
-    <button
-      className="ghost"
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        await fetch('/api/no-trade', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user, reason: 'flat day' }),
-        });
-        setBusy(false);
-        onDone && onDone();
-      }}
-    >
-      Flat day
-    </button>
-  );
-}
-
-async function refresh(setDb) {
-  const d = await fetch('/api/db', { cache: 'no-store' }).then(r => r.json());
-  setDb(d);
 }
 
 function fmtDate(iso) {

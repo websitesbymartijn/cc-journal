@@ -45,6 +45,10 @@ export default function CalendarPage() {
     if (!db) return new Set();
     return new Set(db.noTradeDays.filter(p => p.user === profile).map(p => p.date));
   }, [db, profile]);
+  const postSet = useMemo(() => {
+    if (!db || !db.post) return new Set();
+    return new Set(db.post.filter(p => p.user === profile).map(p => p.date));
+  }, [db, profile]);
 
   const monthCells = useMemo(() => buildMonth(cursor.y, cursor.m), [cursor]);
   const monthPnL = monthCells.reduce((s, c) => {
@@ -116,6 +120,7 @@ export default function CalendarPage() {
                 {prepSet.has(key) && <span className="dot prep" title="prep" />}
                 {headSet.has(key) && <span className="dot head" title="headspace" />}
                 {flatSet.has(key) && <span className="dot flat" title="no-trade" />}
+                {postSet.has(key) && <span className="dot post" title="post" />}
               </div>
               <div className="d-count">
                 {data ? `${data.count} tr` : ''}
@@ -127,9 +132,10 @@ export default function CalendarPage() {
       </div>
 
       <div className="cal-legend">
-        <span><span className="dot" style={{ background: 'var(--blue)' }} /> prep</span>
-        <span><span className="dot" style={{ background: 'var(--amber)' }} /> headspace logged</span>
-        <span><span className="dot" style={{ background: 'var(--purple)' }} /> no-trade day</span>
+        <span><span className="dot" style={{ background: 'var(--info)' }} /> prep</span>
+        <span><span className="dot" style={{ background: 'var(--gold)' }} /> headspace logged</span>
+        <span><span className="dot" style={{ background: '#b9a0d9' }} /> no-trade day</span>
+        <span><span className="dot" style={{ background: 'var(--copper)' }} /> day post</span>
         <span style={{ marginLeft: 'auto' }} className="muted">color intensity = relative PnL</span>
       </div>
     </div>

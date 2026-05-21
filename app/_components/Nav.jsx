@@ -7,9 +7,10 @@ import { PROFILES } from '../../lib/profiles';
 
 const LINKS = [
   { href: '/',         label: 'Desk' },
-  { href: '/prep',     label: 'Daily Prep' },
+  { href: '/prep',     label: 'Prep' },
   { href: '/new',      label: 'New Trade' },
   { href: '/trades',   label: 'Trades' },
+  { href: '/post',     label: 'Post' },
   { href: '/calendar', label: 'Calendar' },
   { href: '/review',   label: 'Review' },
 ];
