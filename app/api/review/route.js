@@ -13,6 +13,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  try {
   const body = await req.json();
   const db = ensureShape(await readDB());
   const weekStart = body.weekStart || isoWeekStart(new Date());
@@ -31,6 +32,10 @@ export async function POST(req) {
   else db.reviews.push(row);
   await writeDB(db, `journal: review ${user} week ${weekStart}`);
   return Response.json({ row });
+  } catch (e) {
+    console.error('[api] write failed:', e);
+    return Response.json({ error: String(e.message || e) }, { status: 500 });
+  }
 }
 
 function isoWeekStart(d) {

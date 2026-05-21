@@ -21,6 +21,8 @@ export default function PrepPage() {
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState(false);
   const [override, setOverride] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [savedAt, setSavedAt] = useState(null);
   const [form, setForm] = useState(emptyPrep(today));
   const [hs, setHs] = useState({ sleep: 3, food: 3, mind: 3, note: '' });
 
@@ -70,21 +72,28 @@ export default function PrepPage() {
 
   async function saveAll() {
     setBusy(true);
-    // Save headspace first
-    await fetch('/api/headspace', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...hs, user: profile, date }),
-    });
-    // Save prep
-    await fetch('/api/prep', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, user: profile, date }),
-    });
-    setBusy(false);
-    setEdit(false);
-    load();
+    setSaveError(null);
+    try {
+      const r1 = await fetch('/api/headspace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...hs, user: profile, date }),
+      });
+      if (!r1.ok) throw new Error('headspace save failed: ' + r1.status + ' ' + (await r1.text()));
+      const r2 = await fetch('/api/prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, user: profile, date }),
+      });
+      if (!r2.ok) throw new Error('prep save failed: ' + r2.status + ' ' + (await r2.text()));
+      setBusy(false);
+      setEdit(false);
+      setSavedAt(new Date());
+      load();
+    } catch (e) {
+      setBusy(false);
+      setSaveError(String(e.message || e));
+    }
   }
 
   async function standDown() {
@@ -136,7 +145,7 @@ export default function PrepPage() {
           status={status} blocked={blocked}
           override={override} setOverride={setOverride}
           saveAll={saveAll} standDown={standDown}
-          busy={busy}
+          busy={busy} saveError={saveError} savedAt={savedAt}
           onCancel={() => hydrate(allPrep, allHs, date)}
         />
       ) : (
@@ -171,7 +180,7 @@ function evaluate(hs) {
 }
 
 // ============ EDIT FORM ============
-function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, override, setOverride, saveAll, standDown, busy, onCancel }) {
+function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, override, setOverride, saveAll, standDown, busy, saveError, savedAt, onCancel }) {
   return (
     <form onSubmit={e => { e.preventDefault(); if (!blocked) saveAll(); }}>
       {/* HEADSPACE / READINESS — first thing */}
@@ -299,6 +308,17 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
         </div>
       </div>
 
+      {saveError && (
+        <div className="notice red" style={{ marginTop: 20 }}>
+          <strong style={{ color: 'var(--neg)' }}>Save failed.</strong> {saveError}
+          {' '}<a href="/setup">Fix storage →</a>
+        </div>
+      )}
+      {savedAt && !saveError && (
+        <div className="notice green" style={{ marginTop: 20 }}>
+          <strong style={{ color: 'var(--pos)' }}>Saved ✓</strong> {new Date(savedAt).toLocaleTimeString()}
+        </div>
+      )}
       <div className="flex" style={{ marginTop: 24 }}>
         <button type="submit" className="lg" disabled={busy || blocked}>
           {busy ? 'Saving…' : (blocked ? 'Stand down to continue' : 'Save prep')}

@@ -12,6 +12,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  try {
   const body = await req.json();
   const db = ensureShape(await readDB());
   const trade = {
@@ -54,4 +55,8 @@ export async function POST(req) {
   db.trades.push(trade);
   await writeDB(db, `journal: new ${trade.instrument} ${trade.side} by ${trade.user}`);
   return Response.json({ trade });
+  } catch (e) {
+    console.error('[api] write failed:', e);
+    return Response.json({ error: String(e.message || e) }, { status: 500 });
+  }
 }

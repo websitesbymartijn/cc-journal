@@ -13,6 +13,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  try {
   const body = await req.json();
   const db = ensureShape(await readDB());
   const date = body.date || new Date().toISOString().slice(0, 10);
@@ -31,4 +32,8 @@ export async function POST(req) {
   else db.headspace.push(row);
   await writeDB(db, `journal: headspace ${user} ${date}`);
   return Response.json({ row });
+  } catch (e) {
+    console.error('[api] write failed:', e);
+    return Response.json({ error: String(e.message || e) }, { status: 500 });
+  }
 }

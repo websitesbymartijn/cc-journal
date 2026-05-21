@@ -10,6 +10,7 @@ export async function GET(_req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  try {
   const patch = await req.json();
   const db = ensureShape(await readDB());
   const idx = db.trades.findIndex(t => t.id === params.id);
@@ -19,13 +20,22 @@ export async function PATCH(req, { params }) {
   db.trades[idx] = updated;
   await writeDB(db, `journal: update ${updated.instrument} ${updated.id}`);
   return Response.json({ trade: updated });
+  } catch (e) {
+    console.error('[api] write failed:', e);
+    return Response.json({ error: String(e.message || e) }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req, { params }) {
+  try {
   const db = ensureShape(await readDB());
   const idx = db.trades.findIndex(t => t.id === params.id);
   if (idx === -1) return new Response('Not found', { status: 404 });
   const [removed] = db.trades.splice(idx, 1);
   await writeDB(db, `journal: delete trade ${removed.id}`);
   return Response.json({ ok: true });
+  } catch (e) {
+    console.error('[api] write failed:', e);
+    return Response.json({ error: String(e.message || e) }, { status: 500 });
+  }
 }

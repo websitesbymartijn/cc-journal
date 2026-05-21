@@ -60,17 +60,25 @@ export default function NewTrade() {
 
   const gate = useMemo(() => evaluate(form), [form]);
 
+  const [saveError, setSaveError] = useState(null);
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
-    const res = await fetch('/api/trades', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, user: profile, isATrade: gate.pass }),
-    });
-    const { trade } = await res.json();
-    setBusy(false);
-    router.push(`/trades/${trade.id}`);
+    setSaveError(null);
+    try {
+      const res = await fetch('/api/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, user: profile, isATrade: gate.pass }),
+      });
+      if (!res.ok) throw new Error('trade save failed: ' + res.status + ' ' + (await res.text()));
+      const { trade } = await res.json();
+      setBusy(false);
+      router.push(`/trades/${trade.id}`);
+    } catch (e) {
+      setBusy(false);
+      setSaveError(String(e.message || e));
+    }
   }
 
   if (prepBlocker) {
@@ -171,6 +179,12 @@ export default function NewTrade() {
           </ul>
         </div>
 
+        {saveError && (
+          <div className="notice red" style={{ marginTop: 20 }}>
+            <strong style={{ color: 'var(--neg)' }}>Save failed.</strong> {saveError}
+            {' '}<a href="/setup">Fix storage →</a>
+          </div>
+        )}
         <div className="flex" style={{ marginTop: 20 }}>
           <button type="submit" className="lg" disabled={busy}>{busy ? 'Saving…' : 'Log trade'}</button>
           <span className="muted" style={{ fontSize: 13 }}>You can still log a failing trade — it'll be flagged as not-a-trade. Honest journal wins.</span>

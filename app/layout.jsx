@@ -1,6 +1,7 @@
 import './globals.css';
 import Nav from './_components/Nav';
 import Mantra from './_components/Mantra';
+import StorageBanner from './_components/StorageBanner';
 
 export const metadata = {
   title: '//JRNL — Trader Journal',
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
       <body>
         <div className="app">
           <Nav />
+          <StorageBanner />
           <Mantra kind="bar" />
           <main className="container">{children}</main>
           <div className="footer">

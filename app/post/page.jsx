@@ -22,6 +22,8 @@ export default function PostPage() {
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState(empty(today));
+  const [saveError, setSaveError] = useState(null);
+  const [savedAt, setSavedAt] = useState(null);
 
   useEffect(() => { load(); }, [profile]);
 
@@ -46,14 +48,22 @@ export default function PostPage() {
 
   async function save() {
     setBusy(true);
-    await fetch('/api/post', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, user: profile, date }),
-    });
-    setBusy(false);
-    setEdit(false);
-    load();
+    setSaveError(null);
+    try {
+      const r = await fetch('/api/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, user: profile, date }),
+      });
+      if (!r.ok) throw new Error('post save failed: ' + r.status + ' ' + (await r.text()));
+      setBusy(false);
+      setEdit(false);
+      setSavedAt(new Date());
+      load();
+    } catch (e) {
+      setBusy(false);
+      setSaveError(String(e.message || e));
+    }
   }
 
   const recent = useMemo(
@@ -80,7 +90,7 @@ export default function PostPage() {
         </div>
       )}
 
-      {edit ? <EditForm form={form} update={update} save={save} busy={busy} onCancel={() => hydrate(allPosts, date)} hasExisting={allPosts.some(r => r.date === date)} />
+      {edit ? <EditForm form={form} update={update} save={save} busy={busy} saveError={saveError} savedAt={savedAt} onCancel={() => hydrate(allPosts, date)} hasExisting={allPosts.some(r => r.date === date)} />
             : <View form={form} onEdit={() => setEdit(true)} />}
     </div>
   );
@@ -90,7 +100,7 @@ function empty(d) {
   return { date: d, mood: '', summary: '', worked: '', didntWork: '', lesson: '', gratitude: '' };
 }
 
-function EditForm({ form, update, save, busy, onCancel, hasExisting }) {
+function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasExisting }) {
   return (
     <form onSubmit={e => { e.preventDefault(); save(); }}>
       <SectionHeader num="00" title="Mood at close" hint="One word for the day" />
@@ -156,6 +166,17 @@ function EditForm({ form, update, save, busy, onCancel, hasExisting }) {
         />
       </div>
 
+      {saveError && (
+        <div className="notice red" style={{ marginTop: 20 }}>
+          <strong style={{ color: 'var(--neg)' }}>Save failed.</strong> {saveError}
+          {' '}<a href="/setup">Fix storage →</a>
+        </div>
+      )}
+      {savedAt && !saveError && (
+        <div className="notice green" style={{ marginTop: 20 }}>
+          <strong style={{ color: 'var(--pos)' }}>Saved ✓</strong> {new Date(savedAt).toLocaleTimeString()}
+        </div>
+      )}
       <div className="flex" style={{ marginTop: 24 }}>
         <button type="submit" className="lg" disabled={busy}>{busy ? 'Saving…' : (hasExisting ? 'Update post' : 'Save post')}</button>
         <button type="button" className="ghost" onClick={onCancel}>Cancel</button>
