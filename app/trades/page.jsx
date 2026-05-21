@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useProfile } from '../_components/useProfile';
 
-export default function TradesList() {
+export default function TradesPage() {
+  return (
+    <Suspense fallback={<div className="muted">Loading…</div>}>
+      <TradesList />
+    </Suspense>
+  );
+}
+
+function TradesList() {
   const profile = useProfile();
   const params = useSearchParams();
   const dateFilter = params.get('date');
