@@ -1,41 +1,52 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
 
-const CONFLUENCE_OPTIONS = [
-  'pdVAH', 'pdVAL', 'pdPOC', 'naked level', 'single prints',
-  'anchored VWAP', 'HTF S/R', 'liquidity grab', 'fib 0.618', 'fair-value gap',
-  'OVL', 'dVWAP', 'pwPOC', 'pwVAH', 'pwVAL',
+const CONFLUENCES = [
+  'pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC',
+  'naked level', 'single prints', 'anchored VWAP', 'dVWAP',
+  'HTF S/R', 'liquidity grab', 'fib 0.618', 'fair-value gap', 'OVL',
 ];
 
-const INSTRUMENTS_FUTURES = ['ES', 'NQ', 'YM', 'RTY'];
-const INSTRUMENTS_CRYPTO  = ['BTC', 'ETH'];
+const INSTRUMENTS = ['ES', 'NQ', 'YM', 'RTY', 'BTC', 'ETH'];
 
 export default function NewTrade() {
   const profile = useProfile();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [prepBlocker, setPrepBlocker] = useState(null); // null | { reason, hsReady }
+  const today = new Date().toISOString().slice(0, 10);
+
   const [form, setForm] = useState({
     instrument: 'ES',
     side: 'long',
     level: '',
-    dOpen: 'above pdClose',
-    trigger: '3C',
-    htfBias: '',
-    weeklyStructure: '',
-    dailyStructure: '',
-    ftf30m: '',
-    ltf15m: '',
-    riskPct: '0.5',
-    riskUsd: '',
     entry: '',
     stop: '',
     target: '',
-    preNotes: '',
+    riskUsd: '',
     confluences: [],
+    thesis: '',
   });
+
+  // Check if today's prep + headspace allow trading
+  useEffect(() => {
+    fetch('/api/db', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(db => {
+        const hs = (db.headspace || []).find(h => h.user === profile && h.date === today);
+        const prep = (db.prep || []).find(p => p.user === profile && p.date === today);
+        const hsReady = hs && tradeReady(hs);
+        let reason = null;
+        if (!prep) reason = 'no prep';
+        else if (!hs) reason = 'no headspace';
+        else if (!hsReady) reason = 'stand-down';
+        setPrepBlocker(reason ? { reason, hs, prep } : null);
+      });
+  }, [profile, today]);
 
   function update(k, v) { setForm(f => ({ ...f, [k]: v })); }
   function toggleConfluence(c) {
@@ -47,7 +58,7 @@ export default function NewTrade() {
     }));
   }
 
-  const gate = useMemo(() => evaluateGate(form), [form]);
+  const gate = useMemo(() => evaluate(form), [form]);
 
   async function submit(e) {
     e.preventDefault();
@@ -62,24 +73,24 @@ export default function NewTrade() {
     router.push(`/trades/${trade.id}`);
   }
 
+  if (prepBlocker) {
+    return <Blocked reason={prepBlocker.reason} />;
+  }
+
   return (
-    <div>
-      <h1>New Trade <span className="sub">— pre-flight checklist</span></h1>
-      <p className="dim">Fill this BEFORE you click. If the gate fails, it stays a watchlist item — not a trade.</p>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <h1>New trade <span className="sub">— keep it simple</span></h1>
+      <p className="dim">Six fields. If the gate doesn't pass, it stays a watchlist item — not a trade.</p>
 
       <form onSubmit={submit}>
-        <div className="grid-2">
-          <div className="card">
-            <h3>Instrument & side</h3>
+        {/* Setup */}
+        <div className="card spacious" style={{ marginTop: 20 }}>
+          <h3>Setup</h3>
+          <div className="grid-3">
             <div className="field">
               <label>Instrument</label>
               <select value={form.instrument} onChange={e => update('instrument', e.target.value)}>
-                <optgroup label="Futures">
-                  {INSTRUMENTS_FUTURES.map(i => <option key={i}>{i}</option>)}
-                </optgroup>
-                <optgroup label="Crypto">
-                  {INSTRUMENTS_CRYPTO.map(i => <option key={i}>{i}</option>)}
-                </optgroup>
+                {INSTRUMENTS.map(i => <option key={i}>{i}</option>)}
               </select>
             </div>
             <div className="field">
@@ -90,136 +101,118 @@ export default function NewTrade() {
               </select>
             </div>
             <div className="field">
-              <label>Level</label>
-              <input
-                value={form.level}
-                onChange={e => update('level', e.target.value)}
-                placeholder="e.g. 5,400 / pdVAH / 76,000"
-              />
-            </div>
-            <div className="field">
-              <label>dOpen stat</label>
-              <select value={form.dOpen} onChange={e => update('dOpen', e.target.value)}>
-                <option>above pdClose</option>
-                <option>below pdClose</option>
-                <option>open inside pdVA</option>
-                <option>gap up &gt; 0.5%</option>
-                <option>gap down &gt; 0.5%</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Entry trigger</label>
-              <select value={form.trigger} onChange={e => update('trigger', e.target.value)}>
-                <option>3C</option>
-                <option>30m fractal + 15m close</option>
-                <option>momentum at level</option>
-                <option>limit fill</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3>Top-down structure</h3>
-            <div className="field">
-              <label>HTF bias (weekly/monthly)</label>
-              <input value={form.htfBias} onChange={e => update('htfBias', e.target.value)} placeholder="bullish / bearish / range" />
-            </div>
-            <div className="field">
-              <label>Weekly structure</label>
-              <input value={form.weeklyStructure} onChange={e => update('weeklyStructure', e.target.value)} placeholder="HH/HL, LH/LL, range" />
-            </div>
-            <div className="field">
-              <label>Daily structure</label>
-              <input value={form.dailyStructure} onChange={e => update('dailyStructure', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>30m fractal</label>
-              <input value={form.ftf30m} onChange={e => update('ftf30m', e.target.value)} placeholder="HL formed / waiting" />
-            </div>
-            <div className="field">
-              <label>15m close</label>
-              <input value={form.ltf15m} onChange={e => update('ltf15m', e.target.value)} placeholder="confirmed / waiting" />
+              <label>Level / idea</label>
+              <input value={form.level} onChange={e => update('level', e.target.value)} placeholder="e.g. pdVAH + OVL" />
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: 12 }}>
-          <h3>Confluences <span className="muted" style={{ fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>(minimum 3 to take the trade)</span></h3>
+        {/* Levels + Risk */}
+        <div className="card spacious" style={{ marginTop: 16 }}>
+          <h3>Levels & risk</h3>
+          <div className="grid-3">
+            <div className="field">
+              <label>Entry</label>
+              <input className="lg" value={form.entry} onChange={e => update('entry', e.target.value)} placeholder="5,405" />
+            </div>
+            <div className="field">
+              <label>Stop</label>
+              <input className="lg" value={form.stop} onChange={e => update('stop', e.target.value)} placeholder="5,396" />
+            </div>
+            <div className="field">
+              <label>First target</label>
+              <input className="lg" value={form.target} onChange={e => update('target', e.target.value)} placeholder="5,428" />
+            </div>
+          </div>
+          <div className="field" style={{ maxWidth: 220 }}>
+            <label>Max risk ($)</label>
+            <input className="lg" value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} placeholder="200" />
+          </div>
+        </div>
+
+        {/* Confluences */}
+        <div className="card spacious" style={{ marginTop: 16 }}>
+          <div className="flex between" style={{ marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Confluences</h3>
+            <span className="mono" style={{ fontSize: 12, color: form.confluences.length >= 3 ? 'var(--green-bright)' : 'var(--red)' }}>
+              {form.confluences.length} / 3 minimum
+            </span>
+          </div>
           <div className="chips">
-            {CONFLUENCE_OPTIONS.map(c => (
-              <span
-                key={c}
-                className={'chip' + (form.confluences.includes(c) ? ' on' : '')}
-                onClick={() => toggleConfluence(c)}
-              >{c}</span>
+            {CONFLUENCES.map(c => (
+              <span key={c} className={'chip lg' + (form.confluences.includes(c) ? ' on' : '')} onClick={() => toggleConfluence(c)}>{c}</span>
             ))}
           </div>
-          <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-            Selected: <strong style={{ color: form.confluences.length >= 3 ? 'var(--green)' : 'var(--red)' }}>{form.confluences.length}</strong>
-            {form.confluences.length < 3 && ' — needs ≥ 3'}
-          </div>
         </div>
 
-        <div className="grid-3" style={{ marginTop: 12 }}>
-          <div className="card">
-            <h3>Risk</h3>
-            <div className="field"><label>Max risk %</label>
-              <input value={form.riskPct} onChange={e => update('riskPct', e.target.value)} /></div>
-            <div className="field"><label>Max risk $</label>
-              <input value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} /></div>
-          </div>
-          <div className="card">
-            <h3>Levels</h3>
-            <div className="field"><label>Entry</label><input value={form.entry} onChange={e => update('entry', e.target.value)} /></div>
-            <div className="field"><label>Stop</label><input value={form.stop} onChange={e => update('stop', e.target.value)} /></div>
-            <div className="field"><label>First target</label><input value={form.target} onChange={e => update('target', e.target.value)} /></div>
-          </div>
-          <div className="card">
-            <h3>Pre-trade notes</h3>
-            <div className="field">
-              <textarea
-                value={form.preNotes}
-                onChange={e => update('preNotes', e.target.value)}
-                placeholder="thesis in 1-2 lines — why this, why now"
-                className="tall"
-              />
-            </div>
-          </div>
+        {/* Thesis */}
+        <div className="card spacious" style={{ marginTop: 16 }}>
+          <h3>Thesis</h3>
+          <textarea
+            className="lg"
+            value={form.thesis}
+            onChange={e => update('thesis', e.target.value)}
+            placeholder="Why this trade, why now. One or two sentences."
+          />
         </div>
 
-        <div className={'gate ' + (gate.pass ? '' : 'fail')}>
+        {/* Gate */}
+        <div className={'gate ' + (gate.pass ? 'pass' : 'fail')}>
           <div className="flex between">
-            <strong style={{ color: gate.pass ? 'var(--green)' : 'var(--red)' }}>
-              {gate.pass ? '✓ Clear — this is a trade.' : '✗ Not a trade yet — fix the items below.'}
+            <strong style={{ color: gate.pass ? 'var(--green-bright)' : 'var(--red)', fontSize: 15 }}>
+              {gate.pass ? 'Clear — this is a trade.' : 'Not a trade yet.'}
             </strong>
-            <span className="muted" style={{ fontSize: 11 }}>pre-flight gate</span>
+            <span className="muted mono" style={{ fontSize: 11 }}>pre-flight</span>
           </div>
-          <ul style={{ margin: '8px 0 0 18px', padding: 0 }}>
+          <ul>
             {gate.checks.map(c => (
-              <li key={c.label} style={{ color: c.ok ? 'var(--green)' : 'var(--red)' }}>
-                {c.ok ? '✓' : '✗'} {c.label}
-              </li>
+              <li key={c.label} className={c.ok ? 'ok' : 'bad'}>{c.label}</li>
             ))}
           </ul>
         </div>
 
-        <div className="flex" style={{ marginTop: 16 }}>
-          <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Log trade'}</button>
-          <span className="muted" style={{ fontSize: 12 }}>You can still log it — it'll be flagged as not-a-trade. Honest journal &gt; clean journal.</span>
+        <div className="flex" style={{ marginTop: 20 }}>
+          <button type="submit" className="lg" disabled={busy}>{busy ? 'Saving…' : 'Log trade'}</button>
+          <span className="muted" style={{ fontSize: 13 }}>You can still log a failing trade — it'll be flagged as not-a-trade. Honest journal wins.</span>
         </div>
       </form>
     </div>
   );
 }
 
-function evaluateGate(f) {
+function evaluate(f) {
   const checks = [
-    { label: 'HTF bias filled',           ok: !!f.htfBias.trim() },
-    { label: 'Daily structure filled',    ok: !!f.dailyStructure.trim() },
-    { label: '30m fractal status filled', ok: !!f.ftf30m.trim() },
-    { label: 'At least 3 confluences',    ok: f.confluences.length >= 3 },
-    { label: 'Entry and stop set',        ok: !!f.entry && !!f.stop },
-    { label: 'Risk size set',             ok: !!f.riskPct || !!f.riskUsd },
+    { label: 'At least 3 confluences',  ok: f.confluences.length >= 3 },
+    { label: 'Entry and stop set',       ok: !!f.entry && !!f.stop },
+    { label: 'Risk size set',            ok: !!f.riskUsd },
+    { label: 'Thesis written',           ok: !!f.thesis.trim() && f.thesis.trim().length > 5 },
   ];
   return { pass: checks.every(c => c.ok), checks };
+}
+
+function tradeReady(hs) {
+  if (!hs) return false;
+  if (hs.sleep <= 1 || hs.mind <= 1) return false;
+  if (hs.sleep <= 2 && hs.mind <= 2) return false;
+  return true;
+}
+
+function Blocked({ reason }) {
+  const reasons = {
+    'no prep':       { title: 'No prep for today', body: 'Set the plan before the trade. Open Daily Prep, write your dOpen, longs, shorts, and discipline first.', cta: 'Go to Daily Prep', tone: 'amber' },
+    'no headspace':  { title: 'Log your state first', body: 'Headspace is now part of prep. Rate sleep / food / mind before you trade.', cta: 'Open Daily Prep', tone: 'amber' },
+    'stand-down':    { title: 'Stand-down day', body: 'Your state is below the threshold for execution. The market will be there tomorrow.', cta: 'Mark as flat day', tone: 'red' },
+  };
+  const r = reasons[reason] || reasons['no prep'];
+  return (
+    <div style={{ maxWidth: 540, margin: '60px auto', textAlign: 'center' }}>
+      <div className="card spacious" style={{ borderLeft: '3px solid var(--' + (r.tone) + ')' }}>
+        <h2 style={{ fontSize: 22, marginBottom: 12 }}>{r.title}</h2>
+        <p style={{ fontSize: 14.5 }}>{r.body}</p>
+        <div className="flex" style={{ justifyContent: 'center', marginTop: 18 }}>
+          <Link href="/prep"><button className={r.tone}>{r.cta}</button></Link>
+        </div>
+      </div>
+    </div>
+  );
 }

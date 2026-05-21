@@ -6,13 +6,12 @@ import { useEffect, useState } from 'react';
 import { PROFILES } from '../../lib/profiles';
 
 const LINKS = [
-  { href: '/',          label: 'Desk' },
-  { href: '/prep',      label: 'Daily Prep' },
-  { href: '/new',       label: 'New Trade' },
-  { href: '/trades',    label: 'Trades' },
-  { href: '/calendar',  label: 'Calendar' },
-  { href: '/headspace', label: 'Headspace' },
-  { href: '/review',    label: 'Review' },
+  { href: '/',         label: 'Desk' },
+  { href: '/prep',     label: 'Daily Prep' },
+  { href: '/new',      label: 'New Trade' },
+  { href: '/trades',   label: 'Trades' },
+  { href: '/calendar', label: 'Calendar' },
+  { href: '/review',   label: 'Review' },
 ];
 
 export default function Nav() {

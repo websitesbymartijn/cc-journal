@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
 
 const DOPEN_TAGS = [
@@ -15,21 +16,27 @@ export default function PrepPage() {
   const profile = useProfile();
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
-  const [rows, setRows] = useState([]);
+  const [allPrep, setAllPrep] = useState([]);
+  const [allHs, setAllHs] = useState([]);
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState(false);
+  const [override, setOverride] = useState(false);
   const [form, setForm] = useState(emptyPrep(today));
+  const [hs, setHs] = useState({ sleep: 3, food: 3, mind: 3, note: '' });
 
   useEffect(() => { load(); }, [profile]);
 
   async function load() {
-    const d = await fetch(`/api/prep?user=${profile}`, { cache: 'no-store' }).then(r => r.json());
-    setRows(d.prep || []);
-    hydrateForDate(d.prep || [], date);
+    const db = await fetch('/api/db', { cache: 'no-store' }).then(r => r.json());
+    const prepRows = (db.prep || []).filter(p => p.user === profile);
+    const hsRows   = (db.headspace || []).filter(h => h.user === profile);
+    setAllPrep(prepRows);
+    setAllHs(hsRows);
+    hydrate(prepRows, hsRows, date);
   }
 
-  function hydrateForDate(all, d) {
-    const existing = all.find(r => r.date === d);
+  function hydrate(prepRows, hsRows, d) {
+    const existing = prepRows.find(r => r.date === d);
     if (existing) {
       setForm({ ...emptyPrep(d), ...existing });
       setEdit(false);
@@ -37,11 +44,19 @@ export default function PrepPage() {
       setForm(emptyPrep(d));
       setEdit(true);
     }
+    const exHs = hsRows.find(r => r.date === d);
+    if (exHs) setHs({ sleep: exHs.sleep, food: exHs.food, mind: exHs.mind, note: exHs.note || '' });
+    else setHs({ sleep: 3, food: 3, mind: 3, note: '' });
+    setOverride(false);
   }
 
-  useEffect(() => { if (rows.length) hydrateForDate(rows, date); }, [date]);
+  useEffect(() => {
+    if (allPrep.length || allHs.length) hydrate(allPrep, allHs, date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
 
   function update(k, v) { setForm(f => ({ ...f, [k]: v })); }
+  function setHsK(k, v) { setHs(s => ({ ...s, [k]: v })); }
   function toggleTag(t) {
     setForm(f => ({
       ...f,
@@ -51,8 +66,17 @@ export default function PrepPage() {
     }));
   }
 
-  async function save() {
+  const status = useMemo(() => evaluate(hs), [hs]);
+
+  async function saveAll() {
     setBusy(true);
+    // Save headspace first
+    await fetch('/api/headspace', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...hs, user: profile, date }),
+    });
+    // Save prep
     await fetch('/api/prep', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,15 +87,33 @@ export default function PrepPage() {
     load();
   }
 
+  async function standDown() {
+    setBusy(true);
+    await fetch('/api/headspace', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...hs, user: profile, date }),
+    });
+    await fetch('/api/no-trade', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: profile, date, reason: `stand-down: sleep ${hs.sleep} / mind ${hs.mind}` }),
+    });
+    setBusy(false);
+    setEdit(false);
+    load();
+    alert('Marked as flat day. The market will be there tomorrow.');
+  }
+
   const existingDates = useMemo(
-    () => [...new Set(rows.map(r => r.date))].sort().reverse(),
-    [rows]
+    () => [...new Set(allPrep.map(r => r.date))].sort().reverse(),
+    [allPrep]
   );
 
+  const blocked = status.tier === 'block' && !override;
+
   return (
-    <div>
-      <div className="flex between" style={{ marginBottom: 16 }}>
-        <h1>Daily Prep <span className="sub">— set the plan before the open</span></h1>
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div className="flex between" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
+        <h1>Daily prep <span className="sub">— set the plan before the open</span></h1>
         <div className="flex">
           <input type="date" value={date} onChange={e => setDate(e.target.value)} />
           {!edit && <button className="ghost" onClick={() => setEdit(true)}>Edit</button>}
@@ -79,30 +121,26 @@ export default function PrepPage() {
       </div>
 
       {existingDates.length > 0 && (
-        <div className="flex wrap" style={{ marginBottom: 14, gap: 6 }}>
-          <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>recent:</span>
-          {existingDates.slice(0, 8).map(d => (
-            <span
-              key={d}
-              className={'chip' + (d === date ? ' on' : '')}
-              onClick={() => setDate(d)}
-            >{d}</span>
+        <div className="flex wrap" style={{ marginBottom: 18, gap: 6 }}>
+          <span className="label-mini">recent</span>
+          {existingDates.slice(0, 10).map(d => (
+            <span key={d} className={'chip' + (d === date ? ' on' : '')} onClick={() => setDate(d)}>{d}</span>
           ))}
         </div>
       )}
 
       {edit ? (
         <EditForm
-          form={form}
-          update={update}
-          toggleTag={toggleTag}
-          save={save}
+          form={form} update={update} toggleTag={toggleTag}
+          hs={hs} setHsK={setHsK}
+          status={status} blocked={blocked}
+          override={override} setOverride={setOverride}
+          saveAll={saveAll} standDown={standDown}
           busy={busy}
-          onCancel={() => hydrateForDate(rows, date)}
-          hasExisting={rows.some(r => r.date === date)}
+          onCancel={() => hydrate(allPrep, allHs, date)}
         />
       ) : (
-        <View form={form} onEdit={() => setEdit(true)} />
+        <View form={form} hs={allHs.find(h => h.date === date)} onEdit={() => setEdit(true)} />
       )}
     </div>
   );
@@ -111,34 +149,219 @@ export default function PrepPage() {
 function emptyPrep(d) {
   return {
     date: d,
-    dOpenTags: [],
-    dOpenNote: '',
-    context: '',
-    longs: '',
-    shorts: '',
-    discipline: '',
-    catalysts: '',
-    bias: '',
+    dOpenTags: [], dOpenNote: '',
+    context: '', longs: '', shorts: '',
+    discipline: '', catalysts: '', bias: '',
   };
 }
 
-function View({ form, onEdit }) {
+function evaluate(hs) {
+  // Returns { tier: 'ok' | 'warn' | 'block', message, color }
+  if (hs.sleep <= 1 || hs.mind <= 1) {
+    return { tier: 'block', message: 'You marked a 1 on sleep or mind. Stand-down day — flat trading only.', color: 'red' };
+  }
+  if (hs.sleep <= 2 && hs.mind <= 2) {
+    return { tier: 'block', message: 'Both sleep and mind below 3. Stand-down day — flat trading only.', color: 'red' };
+  }
+  const avg = (hs.sleep + hs.food + hs.mind) / 3;
+  if (avg < 2.7 || hs.mind <= 2) {
+    return { tier: 'warn', message: 'Marginal state. Reduce size, take only A+ setups, no FOMO.', color: 'amber' };
+  }
+  return { tier: 'ok', message: 'Cleared to trade. Stick to the plan.', color: 'green' };
+}
+
+// ============ EDIT FORM ============
+function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, override, setOverride, saveAll, standDown, busy, onCancel }) {
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (!blocked) saveAll(); }}>
+      {/* HEADSPACE / READINESS — first thing */}
+      <SectionHeader num="00" title="Headspace" hint="Your state is your edge. Rate honestly." />
+      <div className="card spacious">
+        <div className="grid-3">
+          <Rating label="Sleep" value={hs.sleep} onChange={v => setHsK('sleep', v)} />
+          <Rating label="Food"  value={hs.food}  onChange={v => setHsK('food', v)} />
+          <Rating label="Mind"  value={hs.mind}  onChange={v => setHsK('mind', v)} />
+        </div>
+        <div className="field" style={{ marginTop: 16, marginBottom: 4 }}>
+          <label>Note (optional)</label>
+          <textarea value={hs.note} onChange={e => setHsK('note', e.target.value)} placeholder="anything off? energy, focus, sleep quality…" />
+        </div>
+
+        <div className={'notice ' + status.color} style={{ marginTop: 16, marginBottom: 0 }}>
+          <strong style={{ color: `var(--${status.color === 'green' ? 'green-bright' : status.color})` }}>
+            {status.tier === 'ok' ? '✓ ' : status.tier === 'warn' ? '⚠ ' : '✗ '}
+            {status.message}
+          </strong>
+        </div>
+
+        {status.tier === 'block' && (
+          <div style={{ marginTop: 16, padding: 16, background: 'var(--red-bg)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8 }}>
+            <div style={{ fontSize: 14.5, marginBottom: 12 }}>
+              The honest move is to sit out. <strong>The chart will be there tomorrow.</strong>
+            </div>
+            <div className="flex" style={{ flexWrap: 'wrap' }}>
+              <button type="button" className="danger" onClick={standDown} disabled={busy}>
+                {busy ? 'Saving…' : 'Stand down — flat day'}
+              </button>
+              <label className="flex gap-6" style={{ margin: 0, cursor: 'pointer' }}>
+                <input type="checkbox" checked={override} onChange={e => setOverride(e.target.checked)} style={{ width: 'auto', height: 'auto' }} />
+                <span style={{ color: 'var(--fg-dim)', fontSize: 12.5 }}>I understand. Let me save the prep anyway.</span>
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Disable visually below if blocked */}
+      <div style={{ opacity: blocked ? 0.4 : 1, pointerEvents: blocked ? 'none' : 'auto' }}>
+
+        <SectionHeader num="01" title="dOpen & bias" hint="Where price opens vs prior day" />
+        <div className="grid-2-1">
+          <div className="card spacious">
+            <label>dOpen tags</label>
+            <div className="chips" style={{ marginBottom: 14 }}>
+              {DOPEN_TAGS.map(t => (
+                <span key={t} className={'chip' + (form.dOpenTags.includes(t) ? ' on' : '')} onClick={() => toggleTag(t)}>{t}</span>
+              ))}
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Note</label>
+              <input className="lg" value={form.dOpenNote} onChange={e => update('dOpenNote', e.target.value)} placeholder="extra context on the open" />
+            </div>
+          </div>
+
+          <div className="card spacious">
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Bias</label>
+              <select value={form.bias} onChange={e => update('bias', e.target.value)}>
+                <option value="">— pick —</option>
+                <option>strong long</option>
+                <option>long-leaning</option>
+                <option>neutral / two-way</option>
+                <option>short-leaning</option>
+                <option>strong short</option>
+                <option>cash / no edge</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <SectionHeader num="02" title="Context" hint="Recent structure, levels claimed, key reads" />
+        <div className="card spacious">
+          <textarea
+            className="xl notes"
+            value={form.context}
+            onChange={e => update('context', e.target.value)}
+            placeholder={'one bullet per line, e.g.\n• tested lower value as support\n• claimed pwPOC'}
+          />
+        </div>
+
+        <SectionHeader num="03" title="Trade plan" hint="Pre-defined orders by type" />
+        <div className="grid-2">
+          <div className="card spacious" style={{ borderTop: '3px solid var(--green)' }}>
+            <h3 style={{ color: 'var(--green-bright)' }}>Longs</h3>
+            <textarea
+              className="xl notes"
+              value={form.longs}
+              onChange={e => update('longs', e.target.value)}
+              placeholder={'one per line, e.g.\n• pdClose + dVWAP (scalp)\n• pdEQ + pdVAH + OVL (daytrade)'}
+            />
+          </div>
+          <div className="card spacious" style={{ borderTop: '3px solid var(--red)' }}>
+            <h3 style={{ color: 'var(--red)' }}>Shorts</h3>
+            <textarea
+              className="xl notes"
+              value={form.shorts}
+              onChange={e => update('shorts', e.target.value)}
+              placeholder={'one per line, e.g.\n• pwVAH only.. (daytrade)\n• none; close to ATH, market is strong'}
+            />
+          </div>
+        </div>
+
+        <SectionHeader num="04" title="Discipline" hint="Rules of engagement for the day" />
+        <div className="card spacious" style={{ borderLeft: '3px solid var(--amber)' }}>
+          <textarea
+            className="xl notes"
+            value={form.discipline}
+            onChange={e => update('discipline', e.target.value)}
+            placeholder={'one rule per line, e.g.\n• trades: Sequence 9 + COT\n• be late rather than too early'}
+          />
+        </div>
+
+        <SectionHeader num="05" title="Catalysts" hint="News, earnings, macro events (optional)" />
+        <div className="card spacious">
+          <textarea
+            className="lg notes"
+            value={form.catalysts}
+            onChange={e => update('catalysts', e.target.value)}
+            placeholder="CPI 14:30 · FOMC minutes 20:00 · AAPL earnings after close…"
+          />
+        </div>
+      </div>
+
+      <div className="flex" style={{ marginTop: 24 }}>
+        <button type="submit" className="lg" disabled={busy || blocked}>
+          {busy ? 'Saving…' : (blocked ? 'Stand down to continue' : 'Save prep')}
+        </button>
+        <button type="button" className="ghost" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+function SectionHeader({ num, title, hint }) {
+  return (
+    <div className="section-header">
+      <span className="num">{num}</span>
+      <span className="title">{title}</span>
+      {hint && <span className="hint">{hint}</span>}
+    </div>
+  );
+}
+
+function Rating({ label, value, onChange }) {
+  return (
+    <div>
+      <label>{label}</label>
+      <div className="rating-pills">
+        {[1,2,3,4,5].map(n => (
+          <span key={n} className={'p' + (value >= n ? ' on' : '')} onClick={() => onChange(n)}>{n}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============ READ-ONLY VIEW ============
+function View({ form, hs, onEdit }) {
   const empty = !form.dOpenTags.length && !form.context && !form.longs && !form.shorts && !form.discipline;
   if (empty) {
     return (
       <div className="empty">
         <div className="big">No prep for {form.date}</div>
-        <div>Write the plan before the open — the trade is half-won.</div>
-        <div className="small">Click Edit to start.</div>
-        <div style={{ marginTop: 18 }}><button onClick={onEdit}>Start prep</button></div>
+        <div>Write the plan before the open. Half the trade is the prep.</div>
+        <div className="small">Plan the trade. Trade the plan.</div>
+        <div style={{ marginTop: 20 }}><button onClick={onEdit}>Start prep</button></div>
       </div>
     );
   }
   return (
     <div className="prep-view">
+      {hs && (
+        <div className="prep-block" style={{ borderLeftColor: 'var(--amber)' }}>
+          <h3>Headspace</h3>
+          <div className="flex" style={{ gap: 24, flexWrap: 'wrap' }}>
+            <Stat label="Sleep" v={hs.sleep} />
+            <Stat label="Food"  v={hs.food}  />
+            <Stat label="Mind"  v={hs.mind}  />
+          </div>
+          {hs.note && <div className="dim" style={{ marginTop: 10 }}>{hs.note}</div>}
+        </div>
+      )}
+
       <div className="prep-block">
         <h3>dOpen</h3>
-        <div className="chips" style={{ marginBottom: form.dOpenNote ? 8 : 0 }}>
+        <div className="chips" style={{ marginBottom: form.dOpenNote ? 10 : 0 }}>
           {form.dOpenTags.map(t => <span key={t} className="chip on">{t}</span>)}
         </div>
         {form.dOpenNote && <div className="dim">{form.dOpenNote}</div>}
@@ -147,42 +370,42 @@ function View({ form, onEdit }) {
       {form.bias && (
         <div className="prep-block">
           <h3>Bias</h3>
-          <div>{form.bias}</div>
+          <div className="bias-text">{form.bias}</div>
         </div>
       )}
 
       {form.context && (
         <div className="prep-block context">
           <h3>Context</h3>
-          {form.context.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{l}</div>)}
+          {form.context.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{cleanLead(l)}</div>)}
         </div>
       )}
 
       {form.longs && (
         <div className="prep-block longs">
           <h3>Longs</h3>
-          {form.longs.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{l}</div>)}
+          {form.longs.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{cleanLead(l)}</div>)}
         </div>
       )}
 
       {form.shorts && (
         <div className="prep-block shorts">
           <h3>Shorts</h3>
-          {form.shorts.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{l}</div>)}
+          {form.shorts.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{cleanLead(l)}</div>)}
         </div>
       )}
 
       {form.discipline && (
         <div className="prep-block discipline">
           <h3>Discipline</h3>
-          {form.discipline.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{l}</div>)}
+          {form.discipline.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{cleanLead(l)}</div>)}
         </div>
       )}
 
       {form.catalysts && (
         <div className="prep-block">
           <h3>Catalysts / News</h3>
-          {form.catalysts.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{l}</div>)}
+          {form.catalysts.split('\n').filter(Boolean).map((l, i) => <div key={i} className="line">{cleanLead(l)}</div>)}
         </div>
       )}
 
@@ -193,95 +416,16 @@ function View({ form, onEdit }) {
   );
 }
 
-function EditForm({ form, update, toggleTag, save, busy, onCancel, hasExisting }) {
+function cleanLead(s) {
+  return s.replace(/^[•\-\*]\s?/, '');
+}
+
+function Stat({ label, v }) {
+  const color = v >= 4 ? 'var(--green-bright)' : v >= 3 ? 'var(--fg)' : v >= 2 ? 'var(--amber)' : 'var(--red)';
   return (
-    <form onSubmit={e => { e.preventDefault(); save(); }}>
-      <div className="grid-2-1">
-        <div className="card">
-          <h3>dOpen</h3>
-          <div className="chips" style={{ marginBottom: 10 }}>
-            {DOPEN_TAGS.map(t => (
-              <span
-                key={t}
-                className={'chip' + (form.dOpenTags.includes(t) ? ' on' : '')}
-                onClick={() => toggleTag(t)}
-              >{t}</span>
-            ))}
-          </div>
-          <div className="field">
-            <label>dOpen note</label>
-            <input value={form.dOpenNote} onChange={e => update('dOpenNote', e.target.value)} placeholder="extra context on the open" />
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>Bias</h3>
-          <div className="field">
-            <select value={form.bias} onChange={e => update('bias', e.target.value)}>
-              <option value="">— pick —</option>
-              <option>strong long</option>
-              <option>long-leaning</option>
-              <option>neutral / two-way</option>
-              <option>short-leaning</option>
-              <option>strong short</option>
-              <option>cash / no edge</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3>Context</h3>
-        <textarea
-          value={form.context}
-          onChange={e => update('context', e.target.value)}
-          placeholder={"one bullet per line, e.g.\ntested lower value as support\nclaimed pwPOC"}
-        />
-      </div>
-
-      <div className="grid-2" style={{ marginTop: 12 }}>
-        <div className="card">
-          <h3 style={{ color: 'var(--green)' }}>Longs</h3>
-          <textarea
-            value={form.longs}
-            onChange={e => update('longs', e.target.value)}
-            placeholder={"one bullet per line, e.g.\npdClose + dVWAP (scalp)\npdEQ + pdVAH + OVL (daytrade)"}
-            className="tall"
-          />
-        </div>
-        <div className="card">
-          <h3 style={{ color: 'var(--red)' }}>Shorts</h3>
-          <textarea
-            value={form.shorts}
-            onChange={e => update('shorts', e.target.value)}
-            placeholder={"one bullet per line, e.g.\npwVAH only.. (daytrade)\nnone; close to ATH, market is strong"}
-            className="tall"
-          />
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 style={{ color: 'var(--amber)' }}>Discipline</h3>
-        <textarea
-          value={form.discipline}
-          onChange={e => update('discipline', e.target.value)}
-          placeholder={"one rule per line, e.g.\ntrades: Sequence 9 + COT\nbe late rather than too early"}
-        />
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3>Catalysts / News (optional)</h3>
-        <textarea
-          value={form.catalysts}
-          onChange={e => update('catalysts', e.target.value)}
-          placeholder="CPI 14:30, FOMC minutes 20:00, earnings AAPL after close…"
-        />
-      </div>
-
-      <div className="flex" style={{ marginTop: 16 }}>
-        <button type="submit" disabled={busy}>{busy ? 'Saving…' : (hasExisting ? 'Update prep' : 'Save prep')}</button>
-        <button type="button" className="ghost" onClick={onCancel}>Cancel</button>
-      </div>
-    </form>
+    <div>
+      <div className="label-mini" style={{ marginBottom: 4 }}>{label}</div>
+      <div className="mono" style={{ fontSize: 22, color, fontWeight: 600 }}>{v}<span className="muted" style={{ fontSize: 13 }}>/5</span></div>
+    </div>
   );
 }
