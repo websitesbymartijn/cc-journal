@@ -6,11 +6,13 @@ import { useEffect, useState } from 'react';
 import { PROFILES } from '../../lib/profiles';
 
 const LINKS = [
-  { href: '/',           label: 'Dashboard' },
-  { href: '/new',        label: 'New Trade' },
-  { href: '/trades',     label: 'Trades' },
-  { href: '/headspace',  label: 'Headspace' },
-  { href: '/review',     label: 'Review' },
+  { href: '/',          label: 'Desk' },
+  { href: '/prep',      label: 'Daily Prep' },
+  { href: '/new',       label: 'New Trade' },
+  { href: '/trades',    label: 'Trades' },
+  { href: '/calendar',  label: 'Calendar' },
+  { href: '/headspace', label: 'Headspace' },
+  { href: '/review',    label: 'Review' },
 ];
 
 export default function Nav() {
@@ -32,7 +34,7 @@ export default function Nav() {
 
   return (
     <header className="topbar">
-      <div className="brand">CC<span className="dot">.</span>JOURNAL</div>
+      <div className="brand"><span className="slash">//</span>JRNL<span className="blink">_</span></div>
       <nav className="nav">
         {LINKS.map(l => {
           const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href);
@@ -44,7 +46,7 @@ export default function Nav() {
         })}
       </nav>
       <div className="profile-switch">
-        <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>profile</span>
+        <span className="label-mini">desk</span>
         {PROFILES.map(p => (
           <span
             key={p.id}

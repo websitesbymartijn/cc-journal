@@ -1,9 +1,10 @@
 import './globals.css';
 import Nav from './_components/Nav';
+import Mantra from './_components/Mantra';
 
 export const metadata = {
-  title: 'CC Journal',
-  description: 'ChartChampions journal — Martijn & Jente',
+  title: '//JRNL — Trader Journal',
+  description: 'Daily prep, trade log, headspace, calendar.',
 };
 
 export default function RootLayout({ children }) {
@@ -12,10 +13,11 @@ export default function RootLayout({ children }) {
       <body>
         <div className="app">
           <Nav />
+          <Mantra kind="bar" />
           <main className="container">{children}</main>
-        </div>
-        <div className="footer">
-          cc-journal &middot; built with the panel &middot; "take it easy"
+          <div className="footer">
+            <Mantra kind="footer" />
+          </div>
         </div>
       </body>
     </html>

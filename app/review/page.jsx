@@ -37,8 +37,8 @@ export default function ReviewPage() {
 
   return (
     <div>
-      <h1>Weekly Review</h1>
-      <p className="muted">Daniel: Friday close. Three questions. Without this the journal is a graveyard of tickets.</p>
+      <h1>Weekly Review <span className="sub">— Friday close</span></h1>
+      <p className="dim">Three questions. Without this, the journal is a graveyard of tickets.</p>
 
       <form onSubmit={save} className="card">
         <div className="field">
@@ -60,9 +60,9 @@ export default function ReviewPage() {
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save review'}</button>
       </form>
 
-      <h2 style={{ marginTop: 24 }}>Past reviews</h2>
+      <h2 style={{ marginTop: 28 }}>Past reviews</h2>
       {rows.length === 0 ? (
-        <div className="muted">No reviews yet.</div>
+        <div className="empty"><div className="big">No reviews yet</div><div className="small">Process over outcome — always.</div></div>
       ) : (
         <div className="grid-2">
           {rows.map(r => (
@@ -82,12 +82,11 @@ export default function ReviewPage() {
 function KV({ k, v }) {
   return (
     <div style={{ padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
-      <div className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</div>
+      <div className="muted" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>{k}</div>
       <div>{v || <span className="muted">—</span>}</div>
     </div>
   );
 }
-
 function isoWeekStart(d) {
   const date = new Date(d);
   const day = (date.getUTCDay() + 6) % 7;

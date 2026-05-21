@@ -7,6 +7,7 @@ import { useProfile } from '../_components/useProfile';
 const CONFLUENCE_OPTIONS = [
   'pdVAH', 'pdVAL', 'pdPOC', 'naked level', 'single prints',
   'anchored VWAP', 'HTF S/R', 'liquidity grab', 'fib 0.618', 'fair-value gap',
+  'OVL', 'dVWAP', 'pwPOC', 'pwVAH', 'pwVAL',
 ];
 
 const INSTRUMENTS_FUTURES = ['ES', 'NQ', 'YM', 'RTY'];
@@ -63,8 +64,8 @@ export default function NewTrade() {
 
   return (
     <div>
-      <h1>New Trade — Pre-trade Gate</h1>
-      <p className="muted">Igor's rule: fill this BEFORE you click. If the gate fails, it's a watchlist, not a trade.</p>
+      <h1>New Trade <span className="sub">— pre-flight checklist</span></h1>
+      <p className="dim">Fill this BEFORE you click. If the gate fails, it stays a watchlist item — not a trade.</p>
 
       <form onSubmit={submit}>
         <div className="grid-2">
@@ -73,10 +74,10 @@ export default function NewTrade() {
             <div className="field">
               <label>Instrument</label>
               <select value={form.instrument} onChange={e => update('instrument', e.target.value)}>
-                <optgroup label="Futures (Severin)">
+                <optgroup label="Futures">
                   {INSTRUMENTS_FUTURES.map(i => <option key={i}>{i}</option>)}
                 </optgroup>
-                <optgroup label="Crypto (Igor)">
+                <optgroup label="Crypto">
                   {INSTRUMENTS_CRYPTO.map(i => <option key={i}>{i}</option>)}
                 </optgroup>
               </select>
@@ -109,8 +110,8 @@ export default function NewTrade() {
             <div className="field">
               <label>Entry trigger</label>
               <select value={form.trigger} onChange={e => update('trigger', e.target.value)}>
-                <option>3C (Severin)</option>
-                <option>30m fractal + 15m close (Igor OTF)</option>
+                <option>3C</option>
+                <option>30m fractal + 15m close</option>
                 <option>momentum at level</option>
                 <option>limit fill</option>
               </select>
@@ -143,50 +144,35 @@ export default function NewTrade() {
         </div>
 
         <div className="card" style={{ marginTop: 12 }}>
-          <h3>Confluences (Severin: minimum 3)</h3>
-          <div className="confluence-pills" style={{ flexWrap: 'wrap', gap: 6 }}>
+          <h3>Confluences <span className="muted" style={{ fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>(minimum 3 to take the trade)</span></h3>
+          <div className="chips">
             {CONFLUENCE_OPTIONS.map(c => (
               <span
                 key={c}
-                className={'p' + (form.confluences.includes(c) ? ' on' : '')}
-                style={{ width: 'auto', padding: '2px 10px', fontSize: 12 }}
+                className={'chip' + (form.confluences.includes(c) ? ' on' : '')}
                 onClick={() => toggleConfluence(c)}
-              >
-                {c}
-              </span>
+              >{c}</span>
             ))}
           </div>
           <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-            Selected: <strong>{form.confluences.length}</strong> {form.confluences.length < 3 && '(under 3 — Severin won\'t take this)'}
+            Selected: <strong style={{ color: form.confluences.length >= 3 ? 'var(--green)' : 'var(--red)' }}>{form.confluences.length}</strong>
+            {form.confluences.length < 3 && ' — needs ≥ 3'}
           </div>
         </div>
 
         <div className="grid-3" style={{ marginTop: 12 }}>
           <div className="card">
             <h3>Risk</h3>
-            <div className="field">
-              <label>Max risk %</label>
-              <input value={form.riskPct} onChange={e => update('riskPct', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>Max risk $</label>
-              <input value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} />
-            </div>
+            <div className="field"><label>Max risk %</label>
+              <input value={form.riskPct} onChange={e => update('riskPct', e.target.value)} /></div>
+            <div className="field"><label>Max risk $</label>
+              <input value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} /></div>
           </div>
           <div className="card">
             <h3>Levels</h3>
-            <div className="field">
-              <label>Entry</label>
-              <input value={form.entry} onChange={e => update('entry', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>Stop</label>
-              <input value={form.stop} onChange={e => update('stop', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>First target</label>
-              <input value={form.target} onChange={e => update('target', e.target.value)} />
-            </div>
+            <div className="field"><label>Entry</label><input value={form.entry} onChange={e => update('entry', e.target.value)} /></div>
+            <div className="field"><label>Stop</label><input value={form.stop} onChange={e => update('stop', e.target.value)} /></div>
+            <div className="field"><label>First target</label><input value={form.target} onChange={e => update('target', e.target.value)} /></div>
           </div>
           <div className="card">
             <h3>Pre-trade notes</h3>
@@ -194,7 +180,8 @@ export default function NewTrade() {
               <textarea
                 value={form.preNotes}
                 onChange={e => update('preNotes', e.target.value)}
-                placeholder="thesis in 1-2 lines"
+                placeholder="thesis in 1-2 lines — why this, why now"
+                className="tall"
               />
             </div>
           </div>
@@ -202,8 +189,10 @@ export default function NewTrade() {
 
         <div className={'gate ' + (gate.pass ? '' : 'fail')}>
           <div className="flex between">
-            <strong>{gate.pass ? '✓ This is a trade.' : '✗ Not a trade yet — fix the items below.'}</strong>
-            <span className="muted">Igor's gate</span>
+            <strong style={{ color: gate.pass ? 'var(--green)' : 'var(--red)' }}>
+              {gate.pass ? '✓ Clear — this is a trade.' : '✗ Not a trade yet — fix the items below.'}
+            </strong>
+            <span className="muted" style={{ fontSize: 11 }}>pre-flight gate</span>
           </div>
           <ul style={{ margin: '8px 0 0 18px', padding: 0 }}>
             {gate.checks.map(c => (
@@ -216,7 +205,7 @@ export default function NewTrade() {
 
         <div className="flex" style={{ marginTop: 16 }}>
           <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Log trade'}</button>
-          <span className="muted">You can save even if the gate fails — it'll be marked as not-a-trade.</span>
+          <span className="muted" style={{ fontSize: 12 }}>You can still log it — it'll be flagged as not-a-trade. Honest journal &gt; clean journal.</span>
         </div>
       </form>
     </div>
@@ -225,12 +214,12 @@ export default function NewTrade() {
 
 function evaluateGate(f) {
   const checks = [
-    { label: 'HTF bias filled',          ok: !!f.htfBias.trim() },
-    { label: 'Daily structure filled',   ok: !!f.dailyStructure.trim() },
-    { label: '30m fractal status filled',ok: !!f.ftf30m.trim() },
-    { label: 'At least 3 confluences',   ok: f.confluences.length >= 3 },
-    { label: 'Entry and stop set',       ok: !!f.entry && !!f.stop },
-    { label: 'Risk size set',            ok: !!f.riskPct || !!f.riskUsd },
+    { label: 'HTF bias filled',           ok: !!f.htfBias.trim() },
+    { label: 'Daily structure filled',    ok: !!f.dailyStructure.trim() },
+    { label: '30m fractal status filled', ok: !!f.ftf30m.trim() },
+    { label: 'At least 3 confluences',    ok: f.confluences.length >= 3 },
+    { label: 'Entry and stop set',        ok: !!f.entry && !!f.stop },
+    { label: 'Risk size set',             ok: !!f.riskPct || !!f.riskUsd },
   ];
   return { pass: checks.every(c => c.ok), checks };
 }

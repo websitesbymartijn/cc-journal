@@ -16,9 +16,7 @@ export default function Headspace() {
     const d = await fetch(`/api/headspace?user=${profile}`, { cache: 'no-store' }).then(r => r.json());
     setRows(d.headspace || []);
     const existing = (d.headspace || []).find(r => r.date === form.date);
-    if (existing) {
-      setForm({ date: existing.date, sleep: existing.sleep, food: existing.food, mind: existing.mind, note: existing.note || '' });
-    }
+    if (existing) setForm({ date: existing.date, sleep: existing.sleep, food: existing.food, mind: existing.mind, note: existing.note || '' });
   }
 
   async function save(e) {
@@ -35,8 +33,8 @@ export default function Headspace() {
 
   return (
     <div>
-      <h1>Headspace</h1>
-      <p className="muted">Severin: log it once per day. Sleep, food, mind. 1 = bad, 5 = great.</p>
+      <h1>Headspace <span className="sub">— sleep · food · mind</span></h1>
+      <p className="dim">A trader's edge starts with their state. Log it once per day. 1 = bad, 5 = great.</p>
 
       <form onSubmit={save} className="card" style={{ maxWidth: 540 }}>
         <div className="field">
@@ -48,14 +46,17 @@ export default function Headspace() {
         <Rating label="Mind" value={form.mind} onChange={v => setForm({ ...form, mind: v })} />
         <div className="field">
           <label>Note</label>
-          <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
+          <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="anything off today? Energy? Headspace?" />
         </div>
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
       </form>
 
-      <h2 style={{ marginTop: 24 }}>History</h2>
+      <h2 style={{ marginTop: 28 }}>History</h2>
       {rows.length === 0 ? (
-        <div className="muted">No entries yet.</div>
+        <div className="empty">
+          <div className="big">Nothing logged yet</div>
+          <div className="small">Sleep well, trade well.</div>
+        </div>
       ) : (
         <table>
           <thead><tr><th>Date</th><th>Sleep</th><th>Food</th><th>Mind</th><th>Note</th></tr></thead>
@@ -63,10 +64,10 @@ export default function Headspace() {
             {rows.map(r => (
               <tr key={r.id}>
                 <td>{r.date}</td>
-                <td>{r.sleep}</td>
-                <td>{r.food}</td>
-                <td>{r.mind}</td>
-                <td className="muted">{r.note}</td>
+                <td><Bars n={r.sleep} /></td>
+                <td><Bars n={r.food} /></td>
+                <td><Bars n={r.mind} /></td>
+                <td className="dim">{r.note}</td>
               </tr>
             ))}
           </tbody>
@@ -80,15 +81,25 @@ function Rating({ label, value, onChange }) {
   return (
     <div className="field">
       <label>{label}</label>
-      <div className="confluence-pills">
+      <div className="rating-pills">
         {[1,2,3,4,5].map(n => (
-          <span
-            key={n}
-            className={'p' + (value >= n ? ' on' : '')}
-            onClick={() => onChange(n)}
-          >{n}</span>
+          <span key={n} className={'p' + (value >= n ? ' on' : '')} onClick={() => onChange(n)}>{n}</span>
         ))}
       </div>
     </div>
+  );
+}
+function Bars({ n }) {
+  return (
+    <span className="rating-pills" style={{ display: 'inline-flex' }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{
+          width: 8, height: 14, borderRadius: 2,
+          background: i <= n ? 'var(--green)' : 'var(--bg-2)',
+          border: '1px solid var(--border-bright)',
+          display: 'inline-block', marginRight: 2,
+        }} />
+      ))}
+    </span>
   );
 }
