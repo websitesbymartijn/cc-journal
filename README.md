@@ -4,6 +4,8 @@ A trading journal for Martijn & Jente, designed in conversation with Igor and Se
 (ChartChampions panel). Built as a Next.js app with a single `data/journal.json` file
 as the database.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwebsitesbymartijn%2Fcc-journal&env=GITHUB_TOKEN,GITHUB_REPO,GITHUB_BRANCH&envDescription=GitHub-backed%20persistence%20for%20data%2Fjournal.json&project-name=cc-journal&repository-name=cc-journal)
+
 ## Design (from the enquête)
 
 **Igor's asks:**
@@ -52,22 +54,4 @@ commit changes back to `data/journal.json` in this repo. Set these env vars in V
 | `GITHUB_REPO`   | `websitesbymartijn/cc-journal` (or your fork)       |
 | `GITHUB_BRANCH` | `main`                                              |
 
-Each save creates a small commit like `journal: new ES long by martijn`. This means
-your journal is also version-controlled.
-
-## Run locally
-
-```bash
-npm install
-npm run dev
-# open http://localhost:3000
-```
-
-## Deploy
-
-Push to GitHub. Connect the repo to Vercel — the framework is auto-detected.
-Add the env vars above. Subsequent pushes auto-deploy.
-
----
-
-*"Take it easy."* — Igor
+Each save creates a small commit like `journal: new ES long by mar
