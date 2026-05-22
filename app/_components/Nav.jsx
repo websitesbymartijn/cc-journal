@@ -13,7 +13,6 @@ const LINKS = [
   { href: '/post',     label: 'Post' },
   { href: '/calendar', label: 'Calendar' },
   { href: '/review',   label: 'Review' },
-  { href: '/setup',    label: 'Setup' },
 ];
 
 export default function Nav() {

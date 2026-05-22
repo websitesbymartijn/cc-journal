@@ -123,15 +123,13 @@ export default function TradeDetail() {
         <div className="card spacious">
           <h3>Pre-trade snapshot</h3>
           <KV k="Opened" v={fmtDate(trade.createdAt)} />
-          <KV k="Gate passed" v={trade.isATrade ? '✓ yes' : '✗ no'} />
-          <KV k="Contracts (size)" v={totalContracts} />
-          <KV k="dOpen" v={trade.dOpen} />
-          <KV k="Trigger" v={trade.trigger} />
-          <KV k="HTF bias" v={trade.htfBias} />
-          <KV k="Confluences" v={(trade.confluences || []).join(', ') || '—'} />
+          <KV k="Side · Size" v={`${trade.side} · ${totalContracts} contract${totalContracts === 1 ? '' : 's'}`} />
+          <KV k="Level" v={trade.level} />
           <KV k="Entry / Stop / Target" v={`${trade.entry || '—'} / ${trade.stop || '—'} / ${trade.target || '—'}`} />
-          <KV k="Risk" v={`${trade.riskPct || '—'}% / $${trade.riskUsd || '—'}`} />
-          <KV k="Thesis" v={trade.thesis || trade.preNotes} />
+          <KV k="Max risk" v={trade.riskUsd ? `$${trade.riskUsd}` : '—'} />
+          <KV k="Confluences" v={(trade.confluences || []).join(', ') || '—'} />
+          <KV k="Gate passed" v={trade.isATrade ? '✓ yes' : '✗ no'} />
+          {trade.thesis && <KV k="Thesis" v={trade.thesis} />}
         </div>
 
         {/* ============= Post-trade ============= */}
@@ -246,23 +244,7 @@ export default function TradeDetail() {
             </div>
           )}
 
-          {/* Discipline + lesson */}
           <div style={{ borderTop: '1px solid var(--border)', margin: '20px 0 12px' }} />
-          <Row label="Execution discipline">
-            <label className="flex" style={{ gap: 8, margin: 0 }}>
-              <input type="checkbox" checked={!!trade.deriskedAt2_5R}
-                onChange={e => update({ deriskedAt2_5R: e.target.checked })} style={{ width: 'auto' }} />
-              De-risked at 2.5R
-            </label>
-          </Row>
-          <Row label="">
-            <label className="flex" style={{ gap: 8, margin: 0 }}>
-              <input type="checkbox" checked={!!trade.movedStopToBE}
-                onChange={e => update({ movedStopToBE: e.target.checked })} style={{ width: 'auto' }} />
-              Stop moved to BE
-            </label>
-          </Row>
-
           <Row label="Lesson">
             <AutoTextarea
               value={trade.lesson}

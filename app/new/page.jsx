@@ -7,6 +7,7 @@ import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
 import AutoTextarea from '../_components/AutoTextarea';
 
+const CORE_GROUPS = ['Volume profile', 'Levels', 'Setups'];
 const CONFLUENCE_GROUPS = [
   { label: 'Volume profile', items: ['pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC', 'OVL'] },
   { label: 'Levels',         items: ['naked level', 'single prints', 'anchored VWAP', 'dVWAP', 'HTF S/R'] },
@@ -22,6 +23,7 @@ export default function NewTrade() {
   const profile = useProfile();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [showIct, setShowIct] = useState(false);
   const [prepBlocker, setPrepBlocker] = useState(null); // null | { reason, hsReady }
   const today = localToday();
 
@@ -159,7 +161,7 @@ export default function NewTrade() {
             </span>
           </div>
           <div style={{ display: 'grid', gap: 14 }}>
-            {CONFLUENCE_GROUPS.map(group => (
+            {CONFLUENCE_GROUPS.filter(g => CORE_GROUPS.includes(g.label)).map(group => (
               <div key={group.label}>
                 <div className="label-mini" style={{ marginBottom: 6 }}>{group.label}</div>
                 <div className="chips">
@@ -169,6 +171,23 @@ export default function NewTrade() {
                 </div>
               </div>
             ))}
+            {showIct ? (
+              <>
+                {CONFLUENCE_GROUPS.filter(g => !CORE_GROUPS.includes(g.label)).map(group => (
+                  <div key={group.label}>
+                    <div className="label-mini" style={{ marginBottom: 6 }}>{group.label}</div>
+                    <div className="chips">
+                      {group.items.map(c => (
+                        <span key={c} className={'chip lg' + (form.confluences.includes(c) ? ' on' : '')} onClick={() => toggleConfluence(c)}>{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <button type="button" className="ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setShowIct(false)}>hide ICT</button>
+              </>
+            ) : (
+              <button type="button" className="ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setShowIct(true)}>+ ICT confluences (ERL · FVG · IFVG)</button>
+            )}
           </div>
         </div>
 

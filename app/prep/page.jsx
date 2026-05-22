@@ -184,6 +184,10 @@ function evaluate(hs) {
 
 // ============ EDIT FORM ============
 function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, override, setOverride, saveAll, standDown, busy, saveError, savedAt, onCancel }) {
+  const hasFvg = !!(form.sweep4h || form.sweepD || form.erl || form.fvg4h || form.fvgD);
+  const hasCatalysts = !!form.catalysts;
+  const [showFvg, setShowFvg] = useState(hasFvg);
+  const [showCatalysts, setShowCatalysts] = useState(hasCatalysts);
   return (
     <form onSubmit={e => { e.preventDefault(); if (!blocked) saveAll(); }}>
       {/* HEADSPACE / READINESS — first thing */}
@@ -268,6 +272,14 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
           />
         </div>
 
+        {!showFvg ? (
+          <div className="section-header">
+            <span className="num">02b</span>
+            <span className="title">Liquidity & FVG</span>
+            <button type="button" className="ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setShowFvg(true)}>+ add</button>
+          </div>
+        ) : (
+        <>
         <SectionHeader num="02b" title="Liquidity & FVG" hint="Sweeps, ranges, fair-value gaps" />
         <div className="grid-2">
           <div className="card spacious">
@@ -320,6 +332,8 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             </div>
           </div>
         </div>
+        </>
+        )}
 
         <SectionHeader num="03" title="Trade plan" hint="Pre-defined orders by type" />
         <div className="grid-2">
@@ -353,6 +367,14 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
           />
         </div>
 
+        {!showCatalysts ? (
+          <div className="section-header">
+            <span className="num">05</span>
+            <span className="title">Catalysts</span>
+            <button type="button" className="ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setShowCatalysts(true)}>+ add</button>
+          </div>
+        ) : (
+        <>
         <SectionHeader num="05" title="Catalysts" hint="News, earnings, macro events (optional)" />
         <div className="card spacious">
           <AutoTextarea
@@ -362,6 +384,8 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             placeholder="CPI 14:30 · FOMC minutes 20:00 · AAPL earnings after close…"
           />
         </div>
+        </>
+        )}
       </div>
 
       {saveError && (

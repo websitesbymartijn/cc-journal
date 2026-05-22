@@ -103,6 +103,7 @@ function empty(d) {
 }
 
 function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasExisting }) {
+  const [showGratitude, setShowGratitude] = useState(!!form.gratitude);
   return (
     <form onSubmit={e => { e.preventDefault(); save(); }}>
       <SectionHeader num="00" title="Mood at close" hint="One word for the day" />
@@ -124,32 +125,17 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
         />
       </div>
 
-      <div className="grid-2" style={{ marginTop: 8 }}>
-        <div>
-          <SectionHeader num="02" title="What worked" hint="" />
-          <div className="card spacious" style={{ borderLeft: '3px solid var(--pos)' }}>
-            <AutoTextarea
-              className="lg"
-              value={form.worked}
-              onChange={e => update('worked', e.target.value)}
-              placeholder="Process wins. Setups you nailed. Patience that paid."
-            />
-          </div>
-        </div>
-        <div>
-          <SectionHeader num="03" title="What didn't" hint="" />
-          <div className="card spacious" style={{ borderLeft: '3px solid var(--neg)' }}>
-            <AutoTextarea
-              className="lg"
-              value={form.didntWork}
-              onChange={e => update('didntWork', e.target.value)}
-              placeholder="Forced entries. Bad sizing. Chased a level. Skipped the plan."
-            />
-          </div>
-        </div>
+      <SectionHeader num="02" title="Reflection" hint="What worked, what didn't" />
+      <div className="card spacious">
+        <AutoTextarea
+          className="lg"
+          value={form.worked}
+          onChange={e => update('worked', e.target.value)}
+          placeholder={'What went right today. What you nailed. What you forced.\n\nUse + and - lines if it helps:\n+ patient through the chop\n- chased the 14:30 spike'}
+        />
       </div>
 
-      <SectionHeader num="04" title="Lesson" hint="One sentence — the takeaway you keep" />
+      <SectionHeader num="03" title="Lesson" hint="One sentence — the takeaway you keep" />
       <div className="card spacious" style={{ borderLeft: '3px solid var(--amber)' }}>
         <AutoTextarea
           className="lg"
@@ -159,14 +145,24 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
         />
       </div>
 
-      <SectionHeader num="05" title="Gratitude (optional)" hint="Anything from the day worth remembering" />
-      <div className="card spacious">
-        <AutoTextarea
-          value={form.gratitude}
-          onChange={e => update('gratitude', e.target.value)}
-          placeholder="A clean exit. A good coffee. A clear head."
-        />
-      </div>
+      {(form.gratitude || showGratitude) ? (
+        <>
+          <SectionHeader num="04" title="Gratitude" hint="Anything from the day worth remembering" />
+          <div className="card spacious">
+            <AutoTextarea
+              value={form.gratitude}
+              onChange={e => update('gratitude', e.target.value)}
+              placeholder="A clean exit. A good coffee. A clear head."
+            />
+          </div>
+        </>
+      ) : (
+        <div className="section-header">
+          <span className="num">04</span>
+          <span className="title">Gratitude</span>
+          <button type="button" className="ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setShowGratitude(true)}>+ add</button>
+        </div>
+      )}
 
       {saveError && (
         <div className="notice red" style={{ marginTop: 20 }}>
