@@ -51,6 +51,12 @@ export async function POST(req) {
     outcome: '',
     lesson: '',
     screenshotUrl: '',
+    // Partial fill (runner support)
+    partialTaken: false,
+    partialExit: '',
+    partialR: '',
+    partialPnl: '',
+    partialAt: null,
   };
   db.trades.push(trade);
   await writeDB(db, `journal: new ${trade.instrument} ${trade.side} by ${trade.user}`);

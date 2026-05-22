@@ -91,7 +91,7 @@ function TradesList() {
                 <td>{t.level || '—'}</td>
                 <td>{t.confluenceCount}</td>
                 <td>{t.isATrade ? <span className="tag green">✓</span> : <span className="tag red">✗</span>}</td>
-                <td><span className={'tag ' + (t.status === 'open' ? 'amber' : 'blue')}>{t.status}</span></td>
+                <td><span className={'tag ' + (t.status === 'open' ? 'amber' : t.status === 'runner' ? 'purple' : 'blue')}>{t.status}</span></td>
                 <td>{t.rMultiple || '—'}</td>
                 <td className={'right ' + pnlClass(t.pnl)}>{fmtUsd(t.pnl)}</td>
                 <td><Link href={`/trades/${t.id}`}>open →</Link></td>

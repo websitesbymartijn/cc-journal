@@ -33,7 +33,7 @@ export default function Desk() {
 
   const trades = db.trades.filter(t => t.user === profile);
   const closed = trades.filter(t => t.status === 'closed');
-  const open = trades.filter(t => t.status === 'open');
+  const open = trades.filter(t => t.status === 'open' || t.status === 'runner');
   const wins = closed.filter(t => Number(t.pnl) > 0).length;
   const losses = closed.filter(t => Number(t.pnl) < 0).length;
   const totalPnl = closed.reduce((s, t) => s + (Number(t.pnl) || 0), 0);
@@ -129,7 +129,7 @@ export default function Desk() {
                 <td><span className={'tag ' + (t.side === 'long' ? 'green' : 'red')}>{t.side}</span></td>
                 <td>{t.level || '—'}</td>
                 <td>{t.confluenceCount}</td>
-                <td><span className={'tag ' + (t.status === 'open' ? 'amber' : 'blue')}>{t.status}</span></td>
+                <td><span className={'tag ' + (t.status === 'open' ? 'amber' : t.status === 'runner' ? 'purple' : 'blue')}>{t.status}</span></td>
                 <td>{t.rMultiple || '—'}</td>
                 <td className={'right ' + pnlClass(t.pnl)}>{fmtUsd(t.pnl)}</td>
                 <td><Link href={`/trades/${t.id}`}>open →</Link></td>
