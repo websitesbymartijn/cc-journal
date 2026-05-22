@@ -12,6 +12,7 @@ const DOPEN_TAGS = [
   'gap up', 'gap down', 'flat open',
   'inside pwVA', 'above pwVAH', 'below pwVAL',
   'at ATH', 'above ATH', 'near ATL',
+  'sweep D ERL', 'D FVG',
 ];
 
 export default function PrepPage() {
