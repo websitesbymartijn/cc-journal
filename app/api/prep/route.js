@@ -32,6 +32,11 @@ export async function POST(req) {
     discipline: body.discipline || '',
     catalysts: body.catalysts || '',
     bias: body.bias || '',
+    sweep4h: body.sweep4h || '',
+    sweepD:  body.sweepD  || '',
+    erl:     body.erl     || '',
+    fvg4h:   body.fvg4h   || '',
+    fvgD:    body.fvgD    || '',
     createdAt: idx >= 0 ? db.prep[idx].createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

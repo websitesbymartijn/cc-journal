@@ -162,6 +162,7 @@ function emptyPrep(d) {
     dOpenTags: [], dOpenNote: '',
     context: '', longs: '', shorts: '',
     discipline: '', catalysts: '', bias: '',
+    sweep4h: '', sweepD: '', erl: '', fvg4h: '', fvgD: '',
   };
 }
 
@@ -264,6 +265,59 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             onChange={e => update('context', e.target.value)}
             placeholder={'one bullet per line, e.g.\n• tested lower value as support\n• claimed pwPOC'}
           />
+        </div>
+
+        <SectionHeader num="02b" title="Liquidity & FVG" hint="Sweeps, ranges, fair-value gaps" />
+        <div className="grid-2">
+          <div className="card spacious">
+            <div className="field">
+              <label>4H sweeps</label>
+              <textarea
+                value={form.sweep4h}
+                onChange={e => update('sweep4h', e.target.value)}
+                placeholder={'e.g.\n4368 high not yet swept\n4321 low taken last session'}
+                style={{ minHeight: 90 }}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Daily sweeps</label>
+              <textarea
+                value={form.sweepD}
+                onChange={e => update('sweepD', e.target.value)}
+                placeholder={'e.g.\nDH not yet swept\nDL taken yesterday'}
+                style={{ minHeight: 90 }}
+              />
+            </div>
+          </div>
+          <div className="card spacious">
+            <div className="field">
+              <label>ERL (External Range Liquidity)</label>
+              <textarea
+                value={form.erl}
+                onChange={e => update('erl', e.target.value)}
+                placeholder={'e.g.\nprev week high at 4400\nmonthly high at 4520'}
+                style={{ minHeight: 90 }}
+              />
+            </div>
+            <div className="field">
+              <label>4H FVG</label>
+              <textarea
+                value={form.fvg4h}
+                onChange={e => update('fvg4h', e.target.value)}
+                placeholder={'e.g.\n4350-4358 unfilled\n4310-4318 partial fill'}
+                style={{ minHeight: 80 }}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>D FVG</label>
+              <textarea
+                value={form.fvgD}
+                onChange={e => update('fvgD', e.target.value)}
+                placeholder={'e.g.\n4280-4295 still open\n4180-4205 filled'}
+                style={{ minHeight: 80 }}
+              />
+            </div>
+          </div>
         </div>
 
         <SectionHeader num="03" title="Trade plan" hint="Pre-defined orders by type" />
@@ -416,6 +470,19 @@ function View({ form, hs, onEdit }) {
         </div>
       )}
 
+      {(form.sweep4h || form.sweepD || form.erl || form.fvg4h || form.fvgD) && (
+        <div className="prep-block" style={{ borderLeftColor: 'var(--purple, #b78cf5)' }}>
+          <h3>Liquidity & FVG</h3>
+          <div className="grid-2" style={{ gap: 18, marginTop: 8 }}>
+            {form.sweep4h && <FvgField label="4H sweeps"  text={form.sweep4h} />}
+            {form.sweepD  && <FvgField label="Daily sweeps" text={form.sweepD} />}
+            {form.erl     && <FvgField label="ERL"        text={form.erl} />}
+            {form.fvg4h   && <FvgField label="4H FVG"     text={form.fvg4h} />}
+            {form.fvgD    && <FvgField label="D FVG"      text={form.fvgD} />}
+          </div>
+        </div>
+      )}
+
       {form.discipline && (
         <div className="prep-block discipline">
           <h3>Discipline</h3>
@@ -447,6 +514,19 @@ function Stat({ label, v }) {
     <div>
       <div className="label-mini" style={{ marginBottom: 4 }}>{label}</div>
       <div className="mono" style={{ fontSize: 22, color, fontWeight: 600 }}>{v}<span className="muted" style={{ fontSize: 13 }}>/5</span></div>
+    </div>
+  );
+}
+
+function FvgField({ label, text }) {
+  return (
+    <div>
+      <div className="label-mini" style={{ marginBottom: 6 }}>{label}</div>
+      {text.split('\n').filter(Boolean).map((l, i) => (
+        <div key={i} style={{ color: 'var(--fg)', fontSize: 14, lineHeight: 1.55, marginTop: 2 }}>
+          <span style={{ color: 'var(--muted)', marginRight: 8 }}>•</span>{l.replace(/^[•\-\*]\s?/, '')}
+        </div>
+      ))}
     </div>
   );
 }
