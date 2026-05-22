@@ -7,10 +7,13 @@ import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
 import AutoTextarea from '../_components/AutoTextarea';
 
-const CONFLUENCES = [
-  'pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC',
-  'naked level', 'single prints', 'anchored VWAP', 'dVWAP',
-  'HTF S/R', 'liquidity grab', 'fib 0.618', 'fair-value gap', 'OVL',
+const CONFLUENCE_GROUPS = [
+  { label: 'Volume profile', items: ['pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC', 'OVL'] },
+  { label: 'Levels',         items: ['naked level', 'single prints', 'anchored VWAP', 'dVWAP', 'HTF S/R'] },
+  { label: 'ERL',            items: ['ERL 15m', 'ERL 1h', 'ERL 4h', 'liquidity grab'] },
+  { label: 'FVG',            items: ['FVG 15m', 'FVG 1h', 'FVG 4h', 'fair-value gap'] },
+  { label: 'IFVG',           items: ['IFVG 1m', 'IFVG 5m', 'IFVG 15m'] },
+  { label: 'Setups',         items: ['Unicorn (MSS+FVG)', 'Fib 61-71%', 'fib 0.618'] },
 ];
 
 const INSTRUMENTS = ['ES', 'NQ', 'YM', 'RTY', 'BTC', 'ETH'];
@@ -148,9 +151,16 @@ export default function NewTrade() {
               {form.confluences.length} / 3 minimum
             </span>
           </div>
-          <div className="chips">
-            {CONFLUENCES.map(c => (
-              <span key={c} className={'chip lg' + (form.confluences.includes(c) ? ' on' : '')} onClick={() => toggleConfluence(c)}>{c}</span>
+          <div style={{ display: 'grid', gap: 14 }}>
+            {CONFLUENCE_GROUPS.map(group => (
+              <div key={group.label}>
+                <div className="label-mini" style={{ marginBottom: 6 }}>{group.label}</div>
+                <div className="chips">
+                  {group.items.map(c => (
+                    <span key={c} className={'chip lg' + (form.confluences.includes(c) ? ' on' : '')} onClick={() => toggleConfluence(c)}>{c}</span>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
