@@ -32,6 +32,7 @@ export default function NewTrade() {
     entry: '',
     stop: '',
     target: '',
+    contracts: '1',
     riskUsd: '',
     confluences: [],
     thesis: '',
@@ -137,9 +138,15 @@ export default function NewTrade() {
               <input className="lg" value={form.target} onChange={e => update('target', e.target.value)} placeholder="5,428" />
             </div>
           </div>
-          <div className="field" style={{ maxWidth: 220 }}>
-            <label>Max risk ($)</label>
-            <input className="lg" value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} placeholder="200" />
+          <div className="grid-2" style={{ marginTop: 4 }}>
+            <div className="field">
+              <label>Contracts (size)</label>
+              <input className="lg" type="number" min="1" step="1" value={form.contracts} onChange={e => update('contracts', e.target.value)} placeholder="1" />
+            </div>
+            <div className="field">
+              <label>Max risk ($)</label>
+              <input className="lg" value={form.riskUsd} onChange={e => update('riskUsd', e.target.value)} placeholder="200" />
+            </div>
           </div>
         </div>
 

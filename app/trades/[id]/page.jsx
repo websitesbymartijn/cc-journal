@@ -10,6 +10,9 @@ export default function TradeDetail() {
   const router = useRouter();
   const [trade, setTrade] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [exitForm, setExitForm] = useState({ contracts: 1, price: '', r: '', pnl: '', note: '' });
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetch(`/api/trades/${id}`, { cache: 'no-store' })
@@ -18,6 +21,14 @@ export default function TradeDetail() {
   }, [id]);
 
   if (!trade) return <div className="muted">Loading…</div>;
+
+  const totalContracts = Number(trade.contracts) || 1;
+  const exits = Array.isArray(trade.exits) ? trade.exits : [];
+  const usedContracts = exits.reduce((s, e) => s + (Number(e.contracts) || 0), 0);
+  const openContracts = totalContracts - usedContracts;
+  const totalPnl = exits.reduce((s, e) => s + (Number(e.pnl) || 0), 0);
+  const weightedR = exits.reduce((s, e) => s + (Number(e.r) || 0) * (Number(e.contracts) || 0), 0);
+  const avgR = usedContracts > 0 ? weightedR / usedContracts : 0;
 
   function update(patch) { setTrade(t => ({ ...t, ...patch })); }
 
@@ -33,22 +44,59 @@ export default function TradeDetail() {
     setBusy(false);
   }
 
-  async function takePartial() {
-    // Quick action: switch to runner, mark de-risked & BE
-    await save({
-      status: 'runner',
-      partialTaken: true,
-      partialAt: new Date().toISOString(),
-      deriskedAt2_5R: true,
-      movedStopToBE: true,
+  function startAddExit() {
+    setExitForm({
+      contracts: Math.max(1, openContracts),
+      price: '',
+      r: '',
+      pnl: '',
+      note: '',
     });
+    setAdding(true);
+    setEditingId(null);
+  }
+  function startEditExit(e) {
+    setExitForm({
+      contracts: e.contracts,
+      price: e.price || '',
+      r: e.r || '',
+      pnl: e.pnl || '',
+      note: e.note || '',
+    });
+    setEditingId(e.id);
+    setAdding(true);
   }
 
-  async function closeRunner() {
-    await save({
-      status: 'closed',
-      exitedAt: new Date().toISOString(),
-    });
+  async function saveExit() {
+    const wantedContracts = Math.max(1, Number(exitForm.contracts) || 1);
+    // For new exits, cap at openContracts. For edits, cap at openContracts + the editing row's current value.
+    const currentRowContracts = editingId ? (exits.find(x => x.id === editingId)?.contracts || 0) : 0;
+    const maxAllowed = openContracts + currentRowContracts;
+    const contracts = Math.min(wantedContracts, maxAllowed);
+    if (contracts < 1) { alert('No contracts left to exit.'); return; }
+
+    const newExit = {
+      id: editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+      contracts,
+      price: exitForm.price,
+      r: exitForm.r,
+      pnl: exitForm.pnl,
+      note: exitForm.note,
+      closedAt: editingId ? (exits.find(x => x.id === editingId)?.closedAt || new Date().toISOString()) : new Date().toISOString(),
+    };
+
+    const nextExits = editingId
+      ? exits.map(x => x.id === editingId ? newExit : x)
+      : [...exits, newExit];
+
+    await save({ exits: nextExits });
+    setAdding(false);
+    setEditingId(null);
+  }
+
+  async function deleteExit(exitId) {
+    if (!confirm('Delete this exit row?')) return;
+    await save({ exits: exits.filter(e => e.id !== exitId) });
   }
 
   async function del() {
@@ -57,16 +105,13 @@ export default function TradeDetail() {
     router.push('/trades');
   }
 
-  const partialPnl = Number(trade.partialPnl) || 0;
-  const runnerPnl  = Number(trade.pnl) - partialPnl || 0;
-  const totalPnl   = Number(trade.pnl) || 0;
-  const showPartial = trade.status === 'runner' || trade.partialTaken;
-  const showFinal   = trade.status === 'closed' || trade.status === 'runner';
-
   return (
     <div>
       <div className="flex between" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
-        <h1>{trade.instrument} {trade.side.toUpperCase()} <span className="sub">— {trade.level || '(no level)'}</span></h1>
+        <h1>
+          {trade.instrument} {trade.side.toUpperCase()}
+          <span className="sub">— {trade.level || '(no level)'}</span>
+        </h1>
         <div className="flex">
           <Link href="/trades"><button className="ghost">← Back</button></Link>
           <button className="danger" onClick={del}>Delete</button>
@@ -79,13 +124,10 @@ export default function TradeDetail() {
           <h3>Pre-trade snapshot</h3>
           <KV k="Opened" v={fmtDate(trade.createdAt)} />
           <KV k="Gate passed" v={trade.isATrade ? '✓ yes' : '✗ no'} />
+          <KV k="Contracts (size)" v={totalContracts} />
           <KV k="dOpen" v={trade.dOpen} />
           <KV k="Trigger" v={trade.trigger} />
           <KV k="HTF bias" v={trade.htfBias} />
-          <KV k="Weekly" v={trade.weeklyStructure} />
-          <KV k="Daily" v={trade.dailyStructure} />
-          <KV k="30m" v={trade.ftf30m} />
-          <KV k="15m" v={trade.ltf15m} />
           <KV k="Confluences" v={(trade.confluences || []).join(', ') || '—'} />
           <KV k="Entry / Stop / Target" v={`${trade.entry || '—'} / ${trade.stop || '—'} / ${trade.target || '—'}`} />
           <KV k="Risk" v={`${trade.riskPct || '—'}% / $${trade.riskUsd || '—'}`} />
@@ -94,91 +136,118 @@ export default function TradeDetail() {
 
         {/* ============= Post-trade ============= */}
         <div className="card spacious">
-          <h3>Post-trade</h3>
+          <div className="flex between" style={{ marginBottom: 10 }}>
+            <h3 style={{ margin: 0 }}>Exits</h3>
+            <span className={'tag ' + statusTag(trade.status)}>{trade.status}</span>
+          </div>
 
-          <Row label="Status">
-            <select value={trade.status} onChange={e => update({ status: e.target.value })}>
-              <option value="open">Open</option>
-              <option value="runner">Runner — partial booked</option>
-              <option value="closed">Closed</option>
-            </select>
-          </Row>
-
-          {/* Status banner */}
-          {trade.status === 'open' && !trade.partialTaken && (
-            <div className="notice amber" style={{ marginTop: 10 }}>
-              Trade is live. Took partial profit?
-              {' '}
-              <a href="#partial" onClick={(e) => { e.preventDefault(); takePartial(); }} style={{ marginLeft: 4 }}>
-                Take partial →
-              </a>
+          {/* Contracts status */}
+          <div className="flex" style={{ gap: 18, marginBottom: 14, padding: '12px 14px', background: 'var(--bg-2)', borderRadius: 6, border: '1px solid var(--border)' }}>
+            <Stat label="Total"  v={totalContracts} />
+            <Stat label="Closed" v={usedContracts} color={usedContracts === totalContracts ? 'var(--pos)' : 'var(--fg)'} />
+            <Stat label="Open"   v={openContracts} color={openContracts > 0 ? 'var(--amber)' : 'var(--muted)'} />
+            <div style={{ marginLeft: 'auto' }}>
+              <Stat
+                label="Total PnL"
+                v={fmtMoney(totalPnl)}
+                color={totalPnl > 0 ? 'var(--pos)' : totalPnl < 0 ? 'var(--neg)' : 'var(--fg)'}
+              />
             </div>
-          )}
-          {trade.status === 'runner' && (
-            <div className="notice green" style={{ marginTop: 10 }}>
-              <strong style={{ color: 'var(--pos)' }}>Runner active.</strong> Partial booked at {trade.partialExit || '—'} for {fmtMoney(partialPnl)}.
-              <button className="ghost sm" style={{ marginLeft: 12 }} onClick={closeRunner}>Close runner</button>
+          </div>
+
+          {/* Exits table */}
+          {exits.length > 0 ? (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th><th>Contracts</th><th>Price</th><th>R</th>
+                    <th className="right">PnL</th><th>Note</th><th>When</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exits.map((e, i) => (
+                    <tr key={e.id}>
+                      <td className="muted mono">{i + 1}</td>
+                      <td>{e.contracts}</td>
+                      <td className="mono">{e.price || '—'}</td>
+                      <td className="mono">{e.r || '—'}</td>
+                      <td className={'right mono ' + (Number(e.pnl) > 0 ? 'pnl-pos' : Number(e.pnl) < 0 ? 'pnl-neg' : '')}>
+                        {fmtMoney(e.pnl)}
+                      </td>
+                      <td className="dim" style={{ fontSize: 12 }}>{e.note || '—'}</td>
+                      <td className="muted" style={{ fontSize: 11 }}>{e.closedAt ? fmtDate(e.closedAt) : '—'}</td>
+                      <td>
+                        <button className="ghost sm" onClick={() => startEditExit(e)}>edit</button>
+                        {' '}
+                        <button className="danger sm" onClick={() => deleteExit(e.id)}>×</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {usedContracts > 0 && (
+                    <tr style={{ background: 'var(--bg-2)' }}>
+                      <td colSpan="2" className="mono"><strong>Σ {usedContracts}</strong></td>
+                      <td className="muted">avg R</td>
+                      <td className="mono"><strong>{avgR.toFixed(2)}</strong></td>
+                      <td className={'right mono ' + (totalPnl > 0 ? 'pnl-pos' : totalPnl < 0 ? 'pnl-neg' : '')}>
+                        <strong>{fmtMoney(totalPnl)}</strong>
+                      </td>
+                      <td colSpan="3"></td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
+          ) : (
+            <div className="muted" style={{ padding: '12px 0', fontSize: 13 }}>No exits yet. Trade is live with {totalContracts} contract{totalContracts === 1 ? '' : 's'}.</div>
           )}
 
-          {/* Partial fill subsection */}
-          {showPartial && (
-            <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-2)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <h3 style={{ color: 'var(--gold-bright, var(--amber))', marginBottom: 12 }}>Partial fill</h3>
-              <div className="grid-3" style={{ gap: 12 }}>
+          {/* Add / edit exit form */}
+          {adding && (
+            <div style={{ marginTop: 14, padding: 16, background: 'var(--bg-2)', borderRadius: 8, border: '1px solid var(--amber)' }}>
+              <h3 style={{ marginBottom: 12, color: 'var(--amber)' }}>{editingId ? 'Edit exit' : 'New exit'}</h3>
+              <div className="grid-3" style={{ gap: 10 }}>
+                <Row label={`Contracts (max ${openContracts + (editingId ? (exits.find(x => x.id === editingId)?.contracts || 0) : 0)})`}>
+                  <input
+                    type="number" min="1" step="1"
+                    value={exitForm.contracts}
+                    onChange={e => setExitForm(f => ({ ...f, contracts: e.target.value }))}
+                  />
+                </Row>
                 <Row label="Exit price">
-                  <input value={trade.partialExit} onChange={e => update({ partialExit: e.target.value })} placeholder="5,418" />
+                  <input value={exitForm.price} onChange={e => setExitForm(f => ({ ...f, price: e.target.value }))} placeholder="5,418" />
                 </Row>
-                <Row label="R booked">
-                  <input value={trade.partialR} onChange={e => update({ partialR: e.target.value })} placeholder="2.5" />
-                </Row>
-                <Row label="PnL booked ($)">
-                  <input value={trade.partialPnl} onChange={e => update({ partialPnl: e.target.value })} placeholder="180" />
+                <Row label="R for this exit">
+                  <input value={exitForm.r} onChange={e => setExitForm(f => ({ ...f, r: e.target.value }))} placeholder="2.5" />
                 </Row>
               </div>
-              {trade.partialAt && (
-                <div className="muted" style={{ fontSize: 11, marginTop: 8 }}>booked {fmtDate(trade.partialAt)}</div>
-              )}
+              <Row label="PnL for this exit ($)">
+                <input value={exitForm.pnl} onChange={e => setExitForm(f => ({ ...f, pnl: e.target.value }))} placeholder="180" />
+              </Row>
+              <Row label="Note (optional)">
+                <input value={exitForm.note} onChange={e => setExitForm(f => ({ ...f, note: e.target.value }))} placeholder="scalp partial / runner / stop hit…" />
+              </Row>
+              <div className="flex" style={{ marginTop: 12 }}>
+                <button onClick={saveExit} disabled={busy}>{busy ? 'Saving…' : (editingId ? 'Update exit' : 'Add exit')}</button>
+                <button className="ghost" onClick={() => { setAdding(false); setEditingId(null); }}>Cancel</button>
+              </div>
             </div>
           )}
 
-          {/* Final close subsection */}
-          {showFinal && (
-            <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-2)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <h3 style={{ marginBottom: 12 }}>Final close{trade.status === 'runner' ? ' (runner still open)' : ''}</h3>
-              <div className="grid-3" style={{ gap: 12 }}>
-                <Row label="Runner exit price">
-                  <input value={trade.runnerClosedAt} onChange={e => update({ runnerClosedAt: e.target.value })} placeholder="5,440" />
-                </Row>
-                <Row label="Final R (total)">
-                  <input value={trade.rMultiple} onChange={e => update({ rMultiple: e.target.value })} placeholder="3.8" />
-                </Row>
-                <Row label="Total PnL ($)">
-                  <input value={trade.pnl} onChange={e => update({ pnl: e.target.value })} placeholder="320" />
-                </Row>
-              </div>
-              {showPartial && (
-                <div className="muted mono" style={{ fontSize: 11.5, marginTop: 10 }}>
-                  partial {fmtMoney(partialPnl)} + runner ≈ {fmtMoney(runnerPnl)} = total {fmtMoney(totalPnl)}
+          {!adding && (
+            <div className="flex" style={{ marginTop: 12 }}>
+              {openContracts > 0 ? (
+                <button onClick={startAddExit}>+ Add exit ({openContracts} open)</button>
+              ) : (
+                <div className="notice green" style={{ margin: 0, flex: 1 }}>
+                  <strong style={{ color: 'var(--pos)' }}>All contracts closed.</strong> Total realized {fmtMoney(totalPnl)}.
                 </div>
               )}
-              <div className="field" style={{ marginTop: 14, marginBottom: 0 }}>
-                <label>Outcome</label>
-                <select value={trade.outcome} onChange={e => update({ outcome: e.target.value })}>
-                  <option value="">—</option>
-                  <option value="full target">full target</option>
-                  <option value="partial + BE">partial + BE</option>
-                  <option value="runner closed at target">runner closed at target</option>
-                  <option value="runner stopped at BE">runner stopped at BE</option>
-                  <option value="full stop">full stop</option>
-                  <option value="invalidated, manual exit">invalidated, manual exit</option>
-                </select>
-              </div>
             </div>
           )}
 
-          {/* Discipline checks */}
-          <div style={{ borderTop: '1px solid var(--border)', margin: '14px 0 10px' }} />
+          {/* Discipline + lesson */}
+          <div style={{ borderTop: '1px solid var(--border)', margin: '20px 0 12px' }} />
           <Row label="Execution discipline">
             <label className="flex" style={{ gap: 8, margin: 0 }}>
               <input type="checkbox" checked={!!trade.deriskedAt2_5R}
@@ -206,13 +275,7 @@ export default function TradeDetail() {
           </Row>
 
           <div className="flex" style={{ marginTop: 16 }}>
-            <button disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : 'Save'}</button>
-            {trade.status === 'open' && !trade.partialTaken && (
-              <button className="ghost" disabled={busy} onClick={takePartial}>Take partial (book + BE)</button>
-            )}
-            {trade.status === 'runner' && (
-              <button className="ghost" disabled={busy} onClick={closeRunner}>Close runner</button>
-            )}
+            <button disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : 'Save notes'}</button>
           </div>
         </div>
       </div>
@@ -220,16 +283,25 @@ export default function TradeDetail() {
   );
 }
 
+function statusTag(status) {
+  if (status === 'open') return 'amber';
+  if (status === 'runner') return 'purple';
+  if (status === 'closed') return 'blue';
+  return '';
+}
 function KV({ k, v }) {
-  return (
-    <div className="kv">
-      <span className="k">{k}</span>
-      <span className="v">{v || '—'}</span>
-    </div>
-  );
+  return <div className="kv"><span className="k">{k}</span><span className="v">{v || '—'}</span></div>;
 }
 function Row({ label, children }) {
   return <div className="field">{label ? <label>{label}</label> : null}{children}</div>;
+}
+function Stat({ label, v, color }) {
+  return (
+    <div>
+      <div className="label-mini" style={{ marginBottom: 3 }}>{label}</div>
+      <div className="mono" style={{ fontSize: 18, fontWeight: 600, color: color || 'var(--fg)' }}>{v}</div>
+    </div>
+  );
 }
 function fmtDate(iso) {
   if (!iso) return '—';
@@ -237,7 +309,7 @@ function fmtDate(iso) {
   return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 function fmtMoney(n) {
-  if (n == null || isNaN(Number(n))) return '—';
+  if (n === '' || n == null || isNaN(Number(n))) return '—';
   const num = Number(n);
   const sign = num > 0 ? '+' : '';
   return sign + num.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });

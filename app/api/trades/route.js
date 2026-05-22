@@ -20,6 +20,8 @@ export async function POST(req) {
     user: body.user || 'martijn',
     createdAt: new Date().toISOString(),
     status: 'open',
+    contracts: Number.isFinite(Number(body.contracts)) && Number(body.contracts) > 0 ? Number(body.contracts) : 1,
+    exits: [],
     // Pre-trade fields
     instrument: body.instrument || 'ES',
     side: body.side || 'long',

@@ -1,4 +1,5 @@
 import { readDB, writeDB, ensureShape } from '../../../../lib/db';
+import { recomputeTrade } from '../../../../lib/trades';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,10 @@ export async function PATCH(req, { params }) {
   const db = ensureShape(await readDB());
   const idx = db.trades.findIndex(t => t.id === params.id);
   if (idx === -1) return new Response('Not found', { status: 404 });
-  const updated = { ...db.trades[idx], ...patch };
-  if (Array.isArray(patch.confluences)) updated.confluenceCount = patch.confluences.length;
+  const merged = { ...db.trades[idx], ...patch };
+  if (Array.isArray(patch.confluences)) merged.confluenceCount = patch.confluences.length;
+  // Auto-recompute status/pnl/rMultiple/exitedAt from exits[]
+  const updated = recomputeTrade(merged);
   db.trades[idx] = updated;
   await writeDB(db, `journal: update ${updated.instrument} ${updated.id}`);
   return Response.json({ trade: updated });
