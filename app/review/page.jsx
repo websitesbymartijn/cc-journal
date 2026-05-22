@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
 import { localToday, localWeekStart } from '../../lib/dates';
+import AutoTextarea from '../_components/AutoTextarea';
 
 export default function ReviewPage() {
   const profile = useProfile();
@@ -48,15 +49,15 @@ export default function ReviewPage() {
         </div>
         <div className="field">
           <label>Did I follow my process?</label>
-          <textarea value={form.followedProcess} onChange={e => setForm({ ...form, followedProcess: e.target.value })} />
+          <AutoTextarea value={form.followedProcess} onChange={e => setForm({ ...form, followedProcess: e.target.value })} />
         </div>
         <div className="field">
           <label>Were my A+ setups actually A+?</label>
-          <textarea value={form.aPlusActuallyAPlus} onChange={e => setForm({ ...form, aPlusActuallyAPlus: e.target.value })} />
+          <AutoTextarea value={form.aPlusActuallyAPlus} onChange={e => setForm({ ...form, aPlusActuallyAPlus: e.target.value })} />
         </div>
         <div className="field">
           <label>Highest-probability play for next week?</label>
-          <textarea value={form.nextWeekPlay} onChange={e => setForm({ ...form, nextWeekPlay: e.target.value })} />
+          <AutoTextarea value={form.nextWeekPlay} onChange={e => setForm({ ...form, nextWeekPlay: e.target.value })} />
         </div>
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save review'}</button>
       </form>

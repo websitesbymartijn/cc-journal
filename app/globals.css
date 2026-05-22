@@ -284,14 +284,14 @@ label {
 textarea {
   width: 100%;
   display: block;
-  min-height: 100px;
-  resize: vertical;
+  min-height: 140px;
+  resize: none;
   font-family: var(--font-sans);
   line-height: 1.6;
   padding: 12px 14px;
 }
-textarea.lg  { min-height: 200px; font-size: 14.5px; padding: 16px 18px; line-height: 1.65; }
-textarea.xl  { min-height: 280px; font-size: 15px;   padding: 18px 20px; line-height: 1.7; }
+textarea.lg  { min-height: 220px; font-size: 14.5px; padding: 16px 18px; line-height: 1.65; }
+textarea.xl  { min-height: 320px; font-size: 15px;   padding: 18px 20px; line-height: 1.7; }
 textarea.notes { font-family: var(--font-mono); font-size: 13px; }
 textarea.full  { width: 100%; }
 
@@ -668,8 +668,8 @@ input, select, textarea {
   .row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
   /* Forms */
-  textarea.lg { min-height: 160px; font-size: 14px; padding: 14px; }
-  textarea.xl { min-height: 200px; font-size: 14px; padding: 14px; }
+  textarea.lg { min-height: 180px; font-size: 14px; padding: 14px; }
+  textarea.xl { min-height: 240px; font-size: 14px; padding: 14px; }
   input.lg { height: 44px; font-size: 14px; }
   label { font-size: 11.5px; }
   .gate ul { grid-template-columns: 1fr; }
@@ -784,3 +784,13 @@ img, video, svg, canvas { max-width: 100%; }
 
 /* Tables get scrolled inside .table-scroll */
 .table-scroll { width: 100%; max-width: 100%; }
+
+
+/* ============= Auto-grow textareas ============= */
+textarea {
+  overflow: hidden !important;
+  resize: none !important;
+}
+/* Belt-and-braces: hide WebKit scrollbar if it ever appears */
+textarea::-webkit-scrollbar { width: 0; height: 0; display: none; }
+textarea { scrollbar-width: none; -ms-overflow-style: none; }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
+import AutoTextarea from '../_components/AutoTextarea';
 
 export default function Headspace() {
   const profile = useProfile();
@@ -47,7 +48,7 @@ export default function Headspace() {
         <Rating label="Mind" value={form.mind} onChange={v => setForm({ ...form, mind: v })} />
         <div className="field">
           <label>Note</label>
-          <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="anything off today? Energy? Headspace?" />
+          <AutoTextarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="anything off today? Energy? Headspace?" />
         </div>
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
       </form>

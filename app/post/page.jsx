@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
+import AutoTextarea from '../_components/AutoTextarea';
 
 const MOODS = [
   { v: 'flowing',   label: 'Flowing' },
@@ -115,7 +116,7 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
 
       <SectionHeader num="01" title="What happened" hint="The day in your own words" />
       <div className="card spacious">
-        <textarea
+        <AutoTextarea
           className="xl"
           value={form.summary}
           onChange={e => update('summary', e.target.value)}
@@ -127,7 +128,7 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
         <div>
           <SectionHeader num="02" title="What worked" hint="" />
           <div className="card spacious" style={{ borderLeft: '3px solid var(--pos)' }}>
-            <textarea
+            <AutoTextarea
               className="lg"
               value={form.worked}
               onChange={e => update('worked', e.target.value)}
@@ -138,7 +139,7 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
         <div>
           <SectionHeader num="03" title="What didn't" hint="" />
           <div className="card spacious" style={{ borderLeft: '3px solid var(--neg)' }}>
-            <textarea
+            <AutoTextarea
               className="lg"
               value={form.didntWork}
               onChange={e => update('didntWork', e.target.value)}
@@ -150,7 +151,7 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
 
       <SectionHeader num="04" title="Lesson" hint="One sentence — the takeaway you keep" />
       <div className="card spacious" style={{ borderLeft: '3px solid var(--amber)' }}>
-        <textarea
+        <AutoTextarea
           className="lg"
           value={form.lesson}
           onChange={e => update('lesson', e.target.value)}
@@ -160,7 +161,7 @@ function EditForm({ form, update, save, busy, saveError, savedAt, onCancel, hasE
 
       <SectionHeader num="05" title="Gratitude (optional)" hint="Anything from the day worth remembering" />
       <div className="card spacious">
-        <textarea
+        <AutoTextarea
           value={form.gratitude}
           onChange={e => update('gratitude', e.target.value)}
           placeholder="A clean exit. A good coffee. A clear head."

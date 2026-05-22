@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
+import AutoTextarea from '../_components/AutoTextarea';
 
 const DOPEN_TAGS = [
   'inside pdVA', 'outside pdVA (high)', 'outside pdVA (low)',
@@ -195,7 +196,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
         </div>
         <div className="field" style={{ marginTop: 16, marginBottom: 4 }}>
           <label>Note (optional)</label>
-          <textarea value={hs.note} onChange={e => setHsK('note', e.target.value)} placeholder="anything off? energy, focus, sleep quality…" />
+          <AutoTextarea value={hs.note} onChange={e => setHsK('note', e.target.value)} placeholder="anything off? energy, focus, sleep quality…" />
         </div>
 
         <div className={'notice ' + status.color} style={{ marginTop: 16, marginBottom: 0 }}>
@@ -259,7 +260,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
 
         <SectionHeader num="02" title="Context" hint="Recent structure, levels claimed, key reads" />
         <div className="card spacious">
-          <textarea
+          <AutoTextarea
             className="xl notes"
             value={form.context}
             onChange={e => update('context', e.target.value)}
@@ -272,7 +273,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
           <div className="card spacious">
             <div className="field">
               <label>4H sweeps</label>
-              <textarea
+              <AutoTextarea
                 value={form.sweep4h}
                 onChange={e => update('sweep4h', e.target.value)}
                 placeholder={'e.g.\n4368 high not yet swept\n4321 low taken last session'}
@@ -281,7 +282,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
               <label>Daily sweeps</label>
-              <textarea
+              <AutoTextarea
                 value={form.sweepD}
                 onChange={e => update('sweepD', e.target.value)}
                 placeholder={'e.g.\nDH not yet swept\nDL taken yesterday'}
@@ -292,7 +293,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
           <div className="card spacious">
             <div className="field">
               <label>ERL (External Range Liquidity)</label>
-              <textarea
+              <AutoTextarea
                 value={form.erl}
                 onChange={e => update('erl', e.target.value)}
                 placeholder={'e.g.\nprev week high at 4400\nmonthly high at 4520'}
@@ -301,7 +302,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             </div>
             <div className="field">
               <label>4H FVG</label>
-              <textarea
+              <AutoTextarea
                 value={form.fvg4h}
                 onChange={e => update('fvg4h', e.target.value)}
                 placeholder={'e.g.\n4350-4358 unfilled\n4310-4318 partial fill'}
@@ -310,7 +311,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
               <label>D FVG</label>
-              <textarea
+              <AutoTextarea
                 value={form.fvgD}
                 onChange={e => update('fvgD', e.target.value)}
                 placeholder={'e.g.\n4280-4295 still open\n4180-4205 filled'}
@@ -324,7 +325,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
         <div className="grid-2">
           <div className="card spacious" style={{ borderTop: '3px solid var(--green)' }}>
             <h3 style={{ color: 'var(--green-bright)' }}>Longs</h3>
-            <textarea
+            <AutoTextarea
               className="xl notes"
               value={form.longs}
               onChange={e => update('longs', e.target.value)}
@@ -333,7 +334,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
           </div>
           <div className="card spacious" style={{ borderTop: '3px solid var(--red)' }}>
             <h3 style={{ color: 'var(--red)' }}>Shorts</h3>
-            <textarea
+            <AutoTextarea
               className="xl notes"
               value={form.shorts}
               onChange={e => update('shorts', e.target.value)}
@@ -344,7 +345,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
 
         <SectionHeader num="04" title="Discipline" hint="Rules of engagement for the day" />
         <div className="card spacious" style={{ borderLeft: '3px solid var(--amber)' }}>
-          <textarea
+          <AutoTextarea
             className="xl notes"
             value={form.discipline}
             onChange={e => update('discipline', e.target.value)}
@@ -354,7 +355,7 @@ function EditForm({ form, update, toggleTag, hs, setHsK, status, blocked, overri
 
         <SectionHeader num="05" title="Catalysts" hint="News, earnings, macro events (optional)" />
         <div className="card spacious">
-          <textarea
+          <AutoTextarea
             className="lg notes"
             value={form.catalysts}
             onChange={e => update('catalysts', e.target.value)}

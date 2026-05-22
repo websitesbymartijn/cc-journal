@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import AutoTextarea from '../../_components/AutoTextarea';
 
 export default function TradeDetail() {
   const { id } = useParams();
@@ -104,7 +105,7 @@ export default function TradeDetail() {
           </Row>
           <Row label="Runner closed at"><input value={trade.runnerClosedAt} onChange={e => update({ runnerClosedAt: e.target.value })} /></Row>
 
-          <Row label="Lesson"><textarea value={trade.lesson} onChange={e => update({ lesson: e.target.value })} placeholder="Process vs. outcome — what did the market teach you?" /></Row>
+          <Row label="Lesson"><AutoTextarea value={trade.lesson} onChange={e => update({ lesson: e.target.value })} placeholder="Process vs. outcome — what did the market teach you?" /></Row>
           <Row label="Screenshot URL"><input value={trade.screenshotUrl} onChange={e => update({ screenshotUrl: e.target.value })} placeholder="link to TradingView snapshot" /></Row>
 
           <div className="flex" style={{ marginTop: 14 }}>

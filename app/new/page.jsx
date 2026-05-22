@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useProfile } from '../_components/useProfile';
 import { localToday } from '../../lib/dates';
+import AutoTextarea from '../_components/AutoTextarea';
 
 const CONFLUENCES = [
   'pdVAH', 'pdVAL', 'pdPOC', 'pwVAH', 'pwVAL', 'pwPOC',
@@ -157,7 +158,7 @@ export default function NewTrade() {
         {/* Thesis */}
         <div className="card spacious" style={{ marginTop: 16 }}>
           <h3>Thesis</h3>
-          <textarea
+          <AutoTextarea
             className="lg"
             value={form.thesis}
             onChange={e => update('thesis', e.target.value)}
